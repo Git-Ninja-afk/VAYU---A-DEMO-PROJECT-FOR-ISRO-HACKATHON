@@ -1,0 +1,8 @@
+{
+  "rmse_persistence": 2.68,
+  "rmse_ai": 2.47,
+  "mae_ai": 1.38,
+  "gain_pct": 7.7,
+  "train_days": 6939,
+  "years_tested": 3
+}

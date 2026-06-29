@@ -1,0 +1,144 @@
+<!--Let's try to understand heatwave.py file -->
+
+BIG PICTURE FIRST :
+This file COUNTS the real number straight out of 19 years of IMD max-temperature data, 
+and also works out how that number grows as the world warms -- without guessing the
+growth either. Output goes to outputs/heatwave.json, which scenario.py reads and then showcase it to the live dashboard everything from the data 
+
+
+1) import os, json, numpy as np, xarray as xr
+  We have talked about this several times so no point going over it again and again 
+
+
+2) Settings
+PROC_DIR = data/processed       # where the clean tmax file lives
+OUT      = outputs              # where the answer goes
+THRESHOLD_C   = 40.0
+WARMING_STEPS = [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0]
+
+--> THRESHOLD_C = 40.0 is the SINGLE most important number in this file.
+    It's IMD's official heat-wave line for plains: a day counts as a heat-wave
+    day if the max temperature hits 40 C or more. Central India is a plains
+    heat-wave region, so 40 is the correct, defensible cut.
+
+--> WARMING_STEPS is the list of warming amounts to test: today (0.0), then
+    +0.5 C up to +4 C. THIS LIST IS OUR WARMING CURVE.
+
+
+3) find_tmax_file() 
+
+It lists everything in data/processed, keeps files that start with
+"central_tmax" and end in ".nc", and if it finds none it STOPS with a clear
+message telling to run preprocess.py first. sorted(cands)[-1] takes the
+last one alphabetically then the most recent year range.
+--> The point we conveyed here is : fail LOUDLY and helpfully, never crash with a confusing
+    error.
+
+
+4) heatwave_days(...)  <<<THE HEART OF THE FILE>>>
+
+def heatwave_days(tmax, valid, cell_is_land, delta=0.0):
+    hot = ((tmax + delta) >= THRESHOLD_C) & valid
+    per_year = hot.groupby("time.year").sum("time")
+    per_year = per_year.where(cell_is_land)
+    return float(per_year.mean(["lat", "lon"]).mean("year"))
+
+This one function does the real work. Go slow, line by line:
+
+A) hot = ((tmax + delta) >= THRESHOLD_C) & valid
+   - tmax is the WHOLE cube of daily max temps (every day, every cell) .
+   - tmax + delta WARMS every reading by delta degrees. For the baseline
+     delta = 0, so nothing changes .
+   - >= THRESHOLD_C turns each reading into True/False: True if that day hit 40.
+   - & valid makes sure ocean / edge cells (no real data) can't sneak in as
+     fake True .
+   So "hot" is a cube of True/False -- True wherever a real day was >= 40 C.
+
+B) per_year = hot.groupby("time.year").sum("time")
+   In Python or any programming language, True counts as 1 and False as 0. So summing the True/False over
+   time, GROUPED BY YEAR, gives the COUNT of hot days in each year, at each
+   cell. Result shape: (year, lat, lon).
+
+C) per_year = per_year.where(cell_is_land)
+   Blank out the ocean/edge cells (NaN cells) so they don't drag the average down.
+   (cell_is_land is built in main .)
+
+D) return float(per_year.mean(["lat", "lon"]).mean("year"))
+   - .mean(["lat","lon"]) averages across SPACE -> for each year, the average
+     heat-wave-day count over the region's land cells.
+   - .mean("year") averages across the 19 YEARS -> ONE single number.
+   So the answer is: "heat-wave days per year at a typical Central-India cell."
+
+
+5) THE WARMING TRICK  <<<IMPORTANT>>>>>
+
+Let's see How do we know how many EXTRA heat-wave days a +2 C world brings?
+The lazy way (old scenario.py) was to GUESS "+6 per degree."
+We don't guess. We take the actual temperature field, ADD the warming to
+every single reading (tmax + delta), and RE-COUNT the days that now cross 40.
+The growth FALLS OUT OF THE DATA.
+
+And the process just keep on progressing -- each extra degree adds more days than the last. 
+But Why?
+Because warming shoves the whole temperature distribution to the right, so
+more and more days pile over the 40 C line as you push harder. That curve
+shape is real physics, not a straight-line guess.
+
+6) main() -- load + the two masks
+
+ds = xr.open_dataset(path); tmax = ds["tmax"]
+valid = tmax.notnull()                  # True where there's a real reading
+cell_is_land = valid.mean("time") > 0.5 # cells with data MORE than half the time
+
+--> valid flags real readings (preprocess.py already turned IMD's no-data
+    placeholder 99.9 into NaN (ALL THE OCEAN READING AND THE LAND READING EXCEPT THAT OF CENTRAL INDIA),
+    so notnull() = "this is a genuine reading").
+--> cell_is_land: for each cell, what fraction of days have the required data a valid question ? If more than
+    half, call it land. This quietly drops the empty ocean/edge cells in the box.
+
+n_years = number of distinct years (19)
+n_land  = how many land cells survived (80)
+
+
+7) Build the curve
+
+response = {}
+for d in WARMING_STEPS:
+    response[d] = round(heatwave_days(tmax, valid, cell_is_land, d), 1)
+baseline = response[0.0]
+per_degC_local = round(response[1.0] - response[0.0], 1)
+
+--> Loop the warming steps, call the heart function for each, store the answer.
+    response is now {0.0: 40.4, 0.5: 47.0, 1.0: 53.5, ... 4.0: 89.8}.
+--> baseline = today's number (delta 0) = 40.4.
+--> per_degC_local = how many extra days the FIRST degree adds (53.5 - 40.4 =
+    ~13). Labelled "local" on purpose -- it's the slope NEAR today; later degrees
+    add more (the curve accelerates).
+
+
+8) The cross-check print (a second, stricter definition)
+
+region_mean = tmax.mean(["lat", "lon"])   # average the map into one daily number
+region_hw   = days where THAT region-average crosses 40, per year
+
+--> Two honest ways to count heat-wave days:
+    (a) per-cell then average  -> the headline (40.4). "A typical place sees 40."
+    (b) average the map first, then count -> the cross-check (39.2). "Days the
+        WHOLE region is hot."
+    (b) is always a bit LOWER, because averaging smooths out local peaks. We
+    print both so we're transparent about the choice. They land close (40 vs 39),
+    which tells us the box is uniformly hot -- a good sanity sign.
+
+
+9) Save outputs/heatwave.json
+
+payload = {
+   "threshold_c": 40,
+   "definition": "IMD plains heat wave: daily Tmax >= 40 C",
+   "baseline_heatwave_days": 40.4,
+   "warming_response": {"0.0":40.4, ... "4.0":89.8},   # the whole curve
+   "days_per_degC_near_baseline": 13.1,
+}
+
+(It is this process right here which powers up the slider which you see at the dashboard.)
+

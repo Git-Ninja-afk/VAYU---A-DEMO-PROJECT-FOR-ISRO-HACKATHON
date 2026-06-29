@@ -1,0 +1,18 @@
+{
+  "region": "Central India",
+  "threshold_c": 25.0,
+  "definition": "Tropical night: daily Tmin >= 25 C",
+  "source": "central_tmin_2005_2023.nc",
+  "baseline_warm_nights": 54.3,
+  "warming_response": {
+    "0.0": 54.3,
+    "0.5": 69.5,
+    "1.0": 88.6,
+    "1.5": 111.0,
+    "2.0": 133.9,
+    "2.5": 154.4,
+    "3.0": 171.2,
+    "4.0": 193.1
+  },
+  "nights_per_degC_near_baseline": 34.3
+}

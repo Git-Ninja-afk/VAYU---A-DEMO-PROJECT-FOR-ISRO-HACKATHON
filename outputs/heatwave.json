@@ -1,0 +1,18 @@
+{
+  "region": "Central India",
+  "threshold_c": 40.0,
+  "definition": "IMD plains heat wave: daily Tmax >= 40 C",
+  "source": "central_tmax_2005_2023.nc",
+  "baseline_heatwave_days": 40.4,
+  "warming_response": {
+    "0.0": 40.4,
+    "0.5": 47.0,
+    "1.0": 53.5,
+    "1.5": 59.7,
+    "2.0": 65.7,
+    "2.5": 71.6,
+    "3.0": 77.6,
+    "4.0": 89.8
+  },
+  "days_per_degC_near_baseline": 13.1
+}

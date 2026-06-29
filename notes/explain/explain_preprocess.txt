@@ -1,0 +1,228 @@
+"""
+preprocess.py
+...
+"""
+The triple sting contains a big comment on how the process is working 
+and what is doing - Just pure boring documentation .
+
+Commands : 
+
+import argparse
+import os
+import imdlib as imd
+import matplotlib.pyplot as plt
+
+So what does import argparse does it lets the script folder accept options
+from the command line .
+Q) What does it even mean ?? 
+Ans) So we know Normally a script just does one fixed thing.
+But sometimes you want to run the same script different ways without editing the code (think of it like running the script with customization).
+argparse is the key which helps you to customize the script while launching it . 
+
+For eg :
+If we visit starbucks , we asked the coffee-worker to make a coffee for us , then will make the regular coffee which we order , 
+but then i told him/her i want extra cream , extra ice (so what i am doing is customization right) . Similarly argparse does customization
+to your scripts/data . 
+
+Next Command ---> 
+RAW_DIR = os.path.join("data", "raw")
+PROC_DIR = os.path.join("data", "processed")
+FIG_DIR = "outputs"
+
+So what we are doing here is that we are passing raw/data folder data we created to RAW_DIR
+same is happening with PROC_DIR and the FIG_DIR is holding onto the rain plot created 
+between all those years (2005-2023)
+
+Next Command --->
+LAT_MIN, LAT_MAX = 18, 26
+LON_MIN, LON_MAX = 74, 84
+These are the coordinates for the central india could be changed depending onto which 
+pilot area we choose 
+
+Next Command --->
+NODATA = {"rain": -999.0, "tmax": 99.9, "tmin": 99.9}
+A dictionary — a lookup table. It says "the no-data" placeholder for rain is -999.0, for temperature it's 99.9 
+as we discussed in main -999 99.9 gives all false data so we have to remove it , so this dictionary for all the false 
+data that will be deleted afterwards . 
+
+Next command ---->
+LABELS = {"rain": "Rainfall (mm/day)", ...}
+CMAPS = {"rain": "Blues", "tmax": "RdYlBu_r", ...}
+
+These are just to style the plots more like labels is for coloring the text 
+and Cmaps is the color scheme Blues for rain, red-yellow-blue for temperature
+
+<<<IMPORTANT>> 
+</Function 1: load_variable — get the data />-->
+def load_variable(var, start, end):
+Our job is to hand it a variable name and year range, and  It'll give back the needed data (We will come to know moving ahead)
+& var, start, end are the inputs.
+
+Command : 
+os.makedirs(RAW_DIR, exist_ok=True)
+Make sure that the raw data folder is in same folder like that of main.py , if it previously 
+exsists ok move forward . 
+
+Command : 
+try:
+        data = imd.open_data(var, start, end, "yearwise", file_dir=RAW_DIR)
+        print(f"  [{var}] using cached files in {RAW_DIR}")
+ except Exception:
+        print(f"  [{var}] downloading {start}-{end} from IMD (one-time, be patient)...")
+        data = imd.get_data(var, start, end, fn_format="yearwise", file_dir=RAW_DIR)
+
+First Try if Fails do the except task that is the algo. here ,
+so what we are doing we are trying to open_data (read files already on disk (no download), fast and accurate) . 
+Except (if that fails because some years aren't downloaded yet**):** get_data — download them from IMD.
+This commands foolproof our program . 
+So what it does in a nutshell : So if you already have the files, it skips the download. If not, it fetches. 
+what are - f"[{var}]" these are f strings with variable just for cosmetic purpose only 
+
+Next Command : 
+return data.get_xarray()
+what it does is that it returns/hand the result back to whoever called this function.So 
+.get_xarray() converts the raw IMD files into the smart labelled array (time, lat, lon) — same as main.py. 
+So this function ends by giving back clean xarray data.
+
+
+</Function 2: process — the main work/>
+def process(var, start, end):
+    print(f"\n=== {var} ({start}-{end}) ===")
+    ds = load_variable(var, start, end)
+
+So this is the main function tasked to handle all the main work happening in the program 
+Basically what happens :: 
+main()  
+   │  calls
+   ▼
+process("rain", 2005, 2023)
+   │  needs data, so it calls...
+   ▼
+load_variable("rain", 2005, 2023)   ← does the downloading
+   │  returns the data back up
+   ▼
+process continues: clean → crop → save → plot
+
+Command : 
+ds = ds.where(ds[var] != NODATA[var])
+Here we are removing all those unnecessary data that were intervening with the actual good data 
+and corrupting it , so it's a very important process as during this step we are cleaning the data . 
+So basically Keeping every value that isn't the placeholder, turns the rest to NaN. This is what blanks out the ocean.
+
+Command : 
+ds = ds.sortby("lat").sortby("lon")
+ds = ds.sel(lat=slice(LAT_MIN, LAT_MAX), lon=slice(LON_MIN, LON_MAX))
+
+so CROP step — the heart of this file.
+
+sortby("lat") — So in the ds data file (RAW_DATA's new home) we are forcing latitude into ascending order
+you may ask why only ascending , why not descending this is because slice(18, 26) only works if the axis goes low→high.
+IMD data might be stored high→low, which would make the slice return nothing. Sorting first makes it foolproof and helps in
+rooting out all the errors 
+
+.sel(lat=slice(18,26), lon=slice(74,84)) — select only the cells inside your box. 
+Everything outside Central India is discarded. 
+
+command : 
+nt = ds.sizes["time"]
+nlat = ds.sizes["lat"]
+nlon = ds.sizes["lon"]
+pct_missing = float(ds[var].isnull().mean()) * 100
+
+So this is more like a report check it Grabs the cropped dimensions (how many days, how many lat/lon cells).
+The last line is a little bit tricky let's understand it with an example  :
+Say your box had just 5 cells:
+[ 12.0 ,  NaN ,  8.0 ,  NaN ,  3.0 ]
+Step 1 — .isnull() asks each cell "are you NaN?" and answers True/False:
+[ False, True, False, True, False ]
+Step 2 — here's the trick: in Python, True counts as 1 and False counts as 0. So that's really:
+[ 0, 1, 0, 1, 0 ]
+Step 3 - .mean() averages those: (0+1+0+1+0) / 5 = 2/5 = 0.4.
+That 0.4 means 40% of the cells are NaN (missing).
+Step 4 — × 100 turns 0.4 into 40 → a readable 40%.
+So pct_missing = 40.0, and it prints missing cells: 40.0%
+
+Why do we even bother checking this?
+It's a check on your device. When the script finishes, the missing-% tells you if the box makes sense:
+
+Low % (say 5–20%) → great, your box is mostly over land with good data.
+Very high % (like 90%+) → something's wrong — maybe the crop landed in the ocean, or the lat/lon got flipped, or the box is empty. 
+
+It's a 1-second gut-check that your Central India rectangle actually contains real data before you waste time training a model on garbage. 
+
+Command : 
+print(f"  cropped shape : time={nt}, lat={nlat}, lon={nlon}")
+print(f"  missing cells : {pct_missing:.1f}%  (ocean/edges over the box)")
+
+Here it just Prints those numbers. :.1f means "show 1 decimal place ,  the output showcased by it will be :
+os.makedirs(PROC_DIR, exist_ok=True)
+    out = os.path.join(PROC_DIR, f"central_{var}_{start}_{end}.nc")
+    ds.to_netcdf(out)
+    print(f"  saved         : {out}")
+
+Now SAVE step. Make the data/processed folder, build a filename like central_rain_2005_2023.nc (the f-string fills in the variable and years),
+and to_netcdf(out) writes the cleaned, cropped data to disk.
+
+Command : 
+plt.figure(figsize=(5.5, 5))
+ds[var].mean("time").plot(cmap=CMAPS[var], cbar_kwargs={"label": LABELS[var]})
+plt.title(f"Central India — mean {var} ({start}-{end})")
+plt.xlabel("Longitude"); plt.ylabel("Latitude")
+plt.tight_layout()
+fig = os.path.join(FIG_DIR, f"central_{var}_mean.png")
+plt.savefig(fig, dpi=130)
+plt.close()
+
+Here we are plotting the figure just as we did for main.py , let's take a quick 
+check on its command :: 
+
+
+mean("time") — average across all ~6900 days into one map.
+plt.savefig(fig) — instead of plt.show() (popup), it saves a PNG to disk. Better for a script that processes multiple variables
+— you don't want windows popping up blocking it.
+plt.close() — clean up so the next variable's plot starts fresh.
+
+It's basis on this figure we will see a rectangular blue plot block of 
+central india which honestly looks like a rectangle 
+
+</Function 3: main — the conductor/>
+
+commands -->
+def main():
+    p = argparse.ArgumentParser(description="Preprocess IMD data for Central India")
+    p.add_argument("--vars", nargs="+", default=["rain"], choices=["rain", "tmax", "tmin"])
+    p.add_argument("--start", type=int, default=2005, help="start year")
+    p.add_argument("--end", type=int, default=2023, help="end year")
+    args = p.parse_args()
+
+Now what does it mean:
+This is the command-line options machinery , which operates and bring you all the data when you 
+typed --vars rain --start 2005 in the terminal , hehe pretty smart.
+
+Let's look at some of it's command : 
+-->ArgumentParser creates the options reader.
+-->Each add_argument defines one option:
+   --vars accepts one or more values (nargs="+"), 
+  defaults to ["rain"], and only allows the three valid choices. --start/--end are integers defaulting to 2005/2023.
+-->parse_args() reads what you actually typed and stores it in args. So args.vars = ["rain"], args.start = 2005, etc.
+
+command :
+print(f"Pilot region: lat {LAT_MIN}-{LAT_MAX} N, lon {LON_MIN}-{LON_MAX} E (Central India)")
+    for v in args.vars:
+        try:
+            process(v, args.start, args.end)
+        except Exception as e:
+            print(f"  !! failed for {v}: {e}")
+    print("\nDone. ...")
+
+what is does : 
+-->Print the region header (the first line you saw).
+-->for v in args.vars: — loop over each requested variable. If you asked for rain tmax tmin, it runs process three times.  
+   You asked for just rain, so once.
+-->Wrapped in try/except so if one variable fails (server hiccup), it prints the error and keeps going instead of crashing the whole script.
+-->Final "Done" message.
+
+
+That's it ....
+
+

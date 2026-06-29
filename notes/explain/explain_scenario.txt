@@ -1,0 +1,112 @@
+
+The Triple String Comment
+Just like in your file, this is pure documentation at the top.
+It tells anyone reading it that this script takes climate scenarios (like less rain or more heat) and translates 
+them into real-world impacts for Central India.
+
+Commands:
+import os, json
+import numpy as np
+import pandas as pd
+import xarray as xr
+We already know os is for file folders,
+and xarray is for our smart, labeled weather data. 
+pandas and numpy are just heavy-duty math and data table tools that help crunch numbers fast.
+
+Commands:
+PROC = os.path.join("data", "processed", "central_rain_2005_2023.nc")
+OUT = "outputs"
+Here we are setting our GPS coordinates for the files. 
+PROC points exactly to the cleaned-up data we created in several of the py files before . 
+OUT is where we want to drop our final results.
+
+Commands:
+BASE_HEATWAVE_DAYS = 18      
+HEATWAVE_PER_DEGC = 6        
+These are our baseline assumptions for the math ahead. 
+It says, "Right now, Central India gets about 18 heatwave days a year. 
+For every 1 degree Celsius the Earth warms, add 6 more days."
+
+</Function 1: drought_risk — The IMD Dictionary/>
+
+def drought_risk(departure_pct):
+    if departure_pct >= 20:
+        return "Excess (flood watch)", "high", "surplus rainfall, runoff/flood risk"
+    elif departure_pct > -20: ...
+What it does:
+This is a referee. You hand it a percentage (how much the rain changed), 
+and it blows the whistle to tell you the official Indian Meteorological Department (IMD) category.
+
+\Different cases/:
++20% or more? Excess rain (floods).
+
+Between -20% and +20%? Normal.
+
+Below -20%? Drought.
+
+Below -60%? Severe drought.
+It returns three things: a title, a severity level, and a quick note on the impact.
+
+</Function 2: simulate — The Core Engine/>
+
+def simulate(rain_change_pct, warming_c, base):
+    new_rain = base["annual_rain_mm"] * (1 + rain_change_pct / 100)
+    cat, level, note = drought_risk(rain_change_pct)
+    heatwave = round(BASE_HEATWAVE_DAYS + warming_c * HEATWAVE_PER_DEGC)
+    return { ... }
+What it does:
+This is the heart of the "what-if" machine.
+
+new_rain: It takes the normal annual rain and multiplies it by your change. 
+(If rain_change_pct is -30, it calculates 70% of the normal rain).
+
+drought_risk: It calls the referee function we just talked about to get the text labels.
+
+heatwave: It does the math on the temperature (18 days + your warming * 6).
+
+return: It bundles all this math into a neat dictionary (a package of data) and hands it back.
+
+</Function 3: main — The Conductor/>
+
+def main():
+    ds = xr.open_dataset(PROC)
+    daily = ds["rain"].mean(dim=["lat", "lon"]).to_series()
+What it does:
+It opens your processed Central India data file. 
+The mean(dim=["lat", "lon"]) part smoothes the entire map into a single average number for each day. 
+It answers the question: "On average, how much did it rain across all of Central India today?"
+
+Command:
+    annual_totals = daily.groupby(daily.index.year).sum()
+    annual_rain = float(annual_totals.mean())
+What it does:
+It groups the daily data by year (2005, 2006, etc.) and sums it up to get total yearly rainfall. 
+Then it averages those totals together to find the "Normal" baseline for Central India.
+ (It does the exact same thing for the Monsoon months of Jun-Sep right below this).
+
+Command:
+    examples = [
+        (0, 0.0),      # no change
+        (-30, 0.0),    # 30% less rain
+        (0, 2.0),      # +2 degC warming
+        (-30, 2.0),    # drought + warming combo
+        (20, 0.0),     # 20% more rain
+    ]
+What it does:
+This is an array of test runs.
+The script loops through these tuples (pairs of numbers) and feeds them into the simulate engine one by one 
+just to print out sample scenarios to the terminal, proving the math works.
+
+Command:
+    os.makedirs(OUT, exist_ok=True)
+    payload = {
+        "region": "Central India",
+        "baseline": { ... },
+        "examples": sims,
+    }
+    with open(os.path.join(OUT, "scenario.json"), "w") as f:
+        json.dump(payload, f, indent=2)
+What it does:
+Finally, it takes all those baselines and simulated examples, 
+packs them into a big dictionary called payload, and saves it as a
+.json file in the outputs folder

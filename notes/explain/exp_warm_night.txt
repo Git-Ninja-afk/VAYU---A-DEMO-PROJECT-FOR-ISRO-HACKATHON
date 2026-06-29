@@ -1,0 +1,88 @@
+Q)First of fall before going to the code , what is warm_nights actually ?
+
+Ans) A "warm night" is just a night that stayed too hot to cool you down.
+Think about a normal hot day. Afternoon is brutal, you're sweating, miserable. But then the sun goes down, the air cools off, and by night it's bearable again. You sleep. You wake up fine. Your body got a break.
+Now imagine a night where it doesn't cool off. It's 11pm — still hot. 2am — still hot. 5am — still hot. The air never drops. 
+You toss and turn, sweaty, no relief, all night long. You wake up already exhausted and overheated, and then the next hot day starts.
+That is a warm night.
+What we did was : 
+We drew a line at 25°C and said: if the night never drops below that line, count it as a warm night. Then we just counted how many of those happened per year.
+Answer we arrived at : 54 nights a year where Central India never cooled down enough at night.
+Why anyone cares: hot days are tough, but our body can take them if the night gives it a rest. It's the nights with no rest that pile up and actually make people sick or worse — 
+old folks, people with no AC, outdoor workers. So counting warm nights tells you something hot days alone don't: how often people get no break from the heat.
+And the scary part — if the world warms by 2°C, those 54 nights jump to 134. More than double the nights with no relief.
+The thermometer reading of the night is the data we downloaded (the "minimum temperature"). 
+"Warm nights" is just us counting how many of those readings were too high.
+
+
+<!--Let's now try to further understand warm_nights.py file -->
+
+BIG PICTURE FIRST:
+This is heatwave.py's actual copy , but a little twist it is for NIGHTS instead of days. It reads IMD
+MIN-temperature (tmin) and counts "warm nights"/"hot nights"
+Output: outputs/warm_nights.json, which feeds the "Warm nights" tile.
+
+WHAT IS A WARM NIGHT (say this to a judge):
+A hot day is survivable if the night cools off and your body recovers. A warm
+night is when it DOESN'T -- the air stays hot all night, no overnight recovery.
+Stack a few back-to-back and that's what actually makes heatwaves deadly
+(old people, no-AC homes, outdoor workers). So daytime heat (heatwave.py) and
+night-time heat (this file) are TWO DIFFERENT hazards. We measure both.
+
+<<<IMPORTANT>>
+This file is ~95% identical to heatwave.py. So no point in explaining the 
+entire thing but there are 3 key differences let's take a look upon them :
+
+
+THE 3 DIFFERENCES FROM heatwave.py
+==================================
+
+1) It reads tmin, not tmax.
+   find_tmin_file() looks for "central_tmin_*.nc" (the MIN temperature file).
+   In main: tmin = ds["tmin"].
+   
+   tmin = the daily MINIMUM temperature - coldest thing to happen within 24 hours cycle,
+   which happens around dawn. If even that lowest point is high, the night
+   truly never cooled.
+  
+2) THRESHOLD_C = 25.0  (not 40.0)
+   A "warm night" / "tropical night" = a night where Tmin stays at or above
+   25 C. 25 C is the common heat-health tropical-night threshold.
+   It's a recognised heat-health cut; we have kept this one
+   as a constant so it's easy to change. IMD also has an official warm-night
+   definition tied to a hot day plus a Tmin departure from normal, but the
+   absolute 25 C line is simpler to defend and to read on a dashboard , we will implement that
+   further in our roadmap . "
+
+3) Only The counting function is named warm_nights(...) and uses Tmin >= 25:
+       hot = ((tmin + delta) >= THRESHOLD_C) & valid
+   Everything else is exactly similar to heatwave_days():
+   - count nights >= 25 per year per cell  (groupby year, sum over time)
+   - drop ocean/edge cells  (.where(cell_is_land))
+   - average over land cells and years to just one number.
+   The WARMING TRICK is the same: add delta to every reading and re-count, so
+   the warming curve is data-driven, not guessed.
+
+
+WHAT we arrived at ::
+-----------------------
+baseline --> 54 warm nights/year today.
+At +2 C warming -> ~134. They MORE THAN DOUBLE -- a steeper jump than heatwave
+days. 
+And Why is that? 
+Because , Central India spends a lot of the year with dawn lows clustered just
+under 25 C, so a small upward shove pushes a huge number of nights over the line.
+
+
+THE OUTPUT (outputs/warm_nights.json)
+-------------------------------------
+{
+  "threshold_c": 25,
+  "definition": "Tropical night: daily Tmin >= 25 C",
+  "baseline_warm_nights": 54.x,
+  "warming_response": {"0.0":54.x, ... "4.0":193.x},
+  "nights_per_degC_near_baseline": ...
+}
+The dashboard reads baseline_warm_nights + warming_response to drive the
+"Warm nights" tile, slider interpolating along the curve.
+

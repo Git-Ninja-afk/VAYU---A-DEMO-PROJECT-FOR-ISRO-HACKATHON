@@ -1,0 +1,239 @@
+Let's begin decoding the baseline.py and see what it is doing 
+commands : 
+1) """...""" : 
+Documentation block basic explanation of what the file is doing and is 
+responsible for in 8-9 lines 
+
+2)import os
+import numpy as np
+import pandas as pd
+import xarray as xr
+import matplotlib.pyplot as plt
+New tools join the party:
+
+so earlier we have seen about os , matplotlib and imdlib now there are 
+more tools required in this project then what meets the eye . Let's look upon 
+them : 
+--> numpy as np — fast math on arrays (we'll use it for the error formulas) , while calculating how our bot was 
+off from the actual figure . 
+--> pandas as pd — works with time series (data indexed by date). This is the star of this file — pandas makes 
+"group by day-of-year," "shift by one day," etc. easy. All the timeline in the project is handled by panda from years to days . 
+--> xarray as xr — to open your .nc file. xarray is the toolbox for handling that 
+gridded climate data (the time × lat × lon cube). os, plt — file paths and plotting - All graphical things are handled by xarray . 
+
+3) PROC = os.path.join("data", "processed", "central_rain_2005_2023.nc")
+FIG_DIR = "outputs"
+The path to your saved Central India file made by the preprocess.py file . 
+
+4)TEST_START = "2021-01-01"
+The split line. Everything before 2021 = training (history the baselines/AI learn from).
+Everything from 2021 onward = testing (unseen days we measure on). 
+Critical: we split by time, not randomly
+
+5) The error functions (<<<IMPORTANT>>>)
+def rmse(pred, true):
+    return float(np.sqrt(np.nanmean((pred - true) ** 2)))
+
+This computes RMSE — Root Mean Squared Error, this is actually the main thing which will determine the score of out ai bot 
+
+The actual process of how it computes the score : 
+pred - true — the miss on each day (predicted minus actual figure).
+** 2 — square each miss (makes them all positive, and punishes big misses harder).
+np.nanmean(...) — average those squared misses (the nan version ignores NaN cells so blanks don't break it).
+np.sqrt(...) — square-root it, to bring the units back to mm/day.
+
+So RMSE = "typical size of a miss, in mm." Lower = better.
+Eg : 
+A 2mm RMSE means predictions are usually ~2mm off.
+
+As it is so important aspect of our whole program let's understand it once again : 
+
+
+----> So first what is RSME ::
+RMSE is the most important number in your whole project
+(it's how you'll prove your AI is good), so it's worth really getting
+
+----> Now The setup: what are we even measuring? ::
+How wrong were you, on average? That's all RMSE answers. 
+To compute it, we need two lists:
+
+true — what actually happened (the real rainfall).
+pred — what you predicted.
+Let's take a eg : A data of 3 days 
+Day   pred(you guessed)    true(reality)
+1        10                   12
+2        5                     5
+3        8                    20 
+
+Now let's see how it is computed through the formula np.sqrt(np.nanmean((pred - true) ** 2))
+
+Step 1: pred - true → the "miss" each day
+We will subtract reality from your guess, day by day. 
+This is your error each day — how far off you were.
+
+Day        pred − true             =miss
+1            10-12                  -2
+2             5-5                    0
+3             8-20                  -12
+
+Do you Notice a problem: some misses are negative and some will be positive (too high). 
+If we just averaged these as it is, a −5 and a +5 would cancel out to 0 — making a terrible predictor look perfect! 
+We need to fix that. That's the next step.
+
+
+Step 2: ** 2 → square each miss
+** 2 means "raise to the power 2," i.e. multiply each number by itself.
+
+Day      miss      (miss)²
+1         -2         4
+2         0          0
+3         -12        144
+
+Squaring does two magic things:
+
+A)Kills the negatives. A negative times a negative is positive. Now every miss is positive, 
+so they can't cancel each other out.
+
+B) Punishes big misses HARD. For Day 1 missed by 2 → it became 4. Day 3 missed by 12 → it became 144. Day 3's miss was 6× bigger, 
+but after squaring it's 36× bigger (144 vs 4). So rather than showing slight errors the RSME points out where you go off and tells 
+you about your model's accuracy .
+
+C) np.nanmean(...) → average them
+Now average those squared misses to get one summary number.
+(4 + 0 + 144) / 3 = 148 / 3 = 49.33
+So the mean squared error is 49.33. 
+One number summarizing "how wrong were we overall."
+---> Now, Why nanmean and not just mean? 
+Remember NaN = "no data here" (those blank ocean/edge cells) . A normal average chokes on NaN — if even one value is NaN, plain .mean() returns NaN and ruins everything. 
+The nan-version (nanmean) politely skips the NaNs and averages only the real numbers , foolproofing the entire process . 
+
+D) Now np.sqrt(...) → square-root it back
+we squared everything, which also squared the units. Our rainfall is in mm, 
+but 49.33 is in "mm-squared" . To undo the squaring and get back to plain mm, we take the square root:
+√49.33 = 7.02
+RMSE = 7.02 mm.
+That's the final answer, and now it's readable: "on a typical day, this predictor is about 7mm off."
+
+I think now it's much more clearer . 
+
+6)Next command is about absolute mean error ::
+def mae(pred, true):
+    return float(np.nanmean(np.abs(pred - true)))
+
+np.abs(pred - true) is the miss size (always positive), then average. It measures the error in mm without the squaring part as seen in RSME . 
+
+We report both RSME and MAE because together they paint a fuller picture.
+
+7)Next :: 
+Loading + reducing to one number per day
+ds = xr.open_dataset(PROC)
+series = ds["rain"].mean(dim=["lat", "lon"]).to_series()
+
+
+Open the dataset file in which we run this command : ds["rain"].mean(dim=["lat", "lon"]
+Now what this command does is for each day, it average across all lat and lon cells → collapse the 33×41 map into a single region-average number. 
+So 6939 maps become 6939 daily numbers.
+
+And .to_series() — convert this massive data into a pandas Series (a list of values indexed by date).
+
+
+8) series.index = pd.to_datetime(series.index)
+Make sure the dates are real date objects
+
+9) ---> print(f"Daily region-average series: {len(series)} days ...")
+        print(f"Overall mean rainfall: {series.mean():.2f} mm/day\n")
+
+prints — how many days, the date range, and the average rainfall. 
+
+10) The train/test split
+pythontrain = series[series.index < TEST_START]
+test = series[series.index >= TEST_START]
+Slice the series by date: train = everything before 2021, test = 2021 onward. <<<IMPORTANT>>
+train is what the baselines learn from here the data before 2021; test is the exam they're scored on done after 2023. 
+They never overlap.
+
+11) Baseline 1: Persistence ("tomorrow = today")
+persist_pred = test.shift(1)
+Persistence = "tomorrow = today." So to predict any day, we just use yesterday's actual value. 
+The challenge in code: how do we line up "yesterday's value" next to "today"? 
+That's the one job .shift(1) does.
+What .shift(1) actually does
+.shift(1) takes a column of values and slides every value down by one row. Everything moves down one step; the top gets a blank (NaN).
+
+your test data (actual rainfall) looks like this:
+Date         test (actual rain)
+1 jan 2021     8
+2 jan 2021     3
+3 jan 2021     12
+4 jan 2021     5
+5 jan 2021     9
+
+Now apply test.shift(1) — every value drops down one row:
+Date         test.shift(1)
+1 jan 2021     NaN      ← nothing above to slide down, so blank
+2 jan 2021      8        ← slid down from Jan 1
+3 jan 2021      3        ← slid down from Jan 2
+4 jan 2021     12       ← slid down from Jan 3
+5 jan 2021      5        ← slid down from Jan 4
+
+merging the 2 :
+
+Date         test (actual)   persist_pred (shifted)
+2021-01-02      3                  8       ← Jan 1's value!
+2021-01-03      12                 3       ← Jan 2's value!
+2021-01-04      5                  12      ← Jan 3's value!
+2021-01-05      9                  5       ← Jan 4's value!
+    
+So what we are doing here On each row, persist_pred now holds the previous day's actual rainfall. That's exactly the persistence prediction: 
+"my guess for today = what actually happened yesterday."
+So on Jan 2, our prediction is 8 (yesterday's real value), and reality was 3. On Jan 3, prediction is 3 (yesterday), reality was 12. 
+The shift automatically lined up yesterday's value next to today, for every single day at once — no loop needed.
+The .iloc[0] = train.iloc[-1] just patches the one blank it leaves at the very top.
+
+12) Baseline 2: Climatology ("the seasonal normal")
+doy_avg = train.groupby(train.index.dayofyear).mean()
+
+dayofyear turns each date into a number 1–365 (Jan 1 = 1, Dec 31 = 365). 
+groupby(...).mean() then averages all the training years together for each day-of-year.
+So doy_avg[196] = "the average rainfall on day 196 across 2005–2020." 
+This is the "seasonal normal" — built only from training data
+
+13) clim_pred = pd.Series(
+    [doy_avg.get(d, train.mean
+)
+
+for each test day, look up its day-of-year in doy_avg and use that as the prediction. 
+(.get(d, train.mean()) = "use the normal for that day; if it's somehow missing, fall back to the overall average.") 
+Result: a prediction for every test day based purely on its calendar date.
+
+14) How we are storing ::
+results = {
+    "Persistence (= yesterday)": (rmse(persist_pred.values, test.values),
+                                  mae(persist_pred.values, test.values)),
+    "Climatology (= seasonal normal)": (rmse(clim_pred.values, test.values),
+                                        mae(clim_pred.values, test.values)),
+}
+A dictionary holding each baseline's (RMSE, MAE). .values pulls the raw numbers out of the pandas Series so the math functions can chew on them. 
+We compare each prediction against test.values (the real rainfall).
+
+15) best = min(results.values(), key=lambda x: x[0])[0]
+print(f"\nBest baseline RMSE = {best:.2f} mm/day  <-- this is the bar the AI must beat.\n")
+Finds the lower of the two RMSEs (x[0] is RMSE in each tuple) — the bar.
+Whichever baseline is harder to beat becomes the target your AI has to clear.
+
+16) The charts :
+comm. 1 : 
+Chart 1: a bar chart of the two RMSEs side by side — visual "here's the bar." 
+The plt.text(...) loop writes the number on top of each bar.
+
+comm.2 :
+Chart 2: takes the first 120 test days and plots three lines — real rainfall (black), persistence's guesses (red), climatology's guesses (green)
+ 
+<<<IMPORTANT>>
+Bar is RMSE = 2.68 mm/day. That's the number burned into the project now. When your AI comes, it must score below 2.68 to be worth anything.
+
+So With the baseline we tested We tested the dumbest possible prediction — 
+just guessing tomorrow's rain by today's rain. and it was only off by 2.68 mm on average. 
+That's our bar. 
+Our AI has to beat 2.68 to prove it's actually smart and not just expensive decoration.
+ Lower = better.

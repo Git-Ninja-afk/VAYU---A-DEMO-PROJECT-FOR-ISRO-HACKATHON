@@ -1,0 +1,271 @@
+<!--Let's try to understand Model.py file -->
+
+1)import os, numpy as np, pandas as pd, xarray as xr
+import matplotlib.pyplot as plt
+import torch
+import torch.nn as nn
+
+--> So we have talked about it all except torch , so what pytorch does 
+it's like AI engine whose's basic job is to train AI and test Ai as 
+we will see further ahead . 
+Here torch.nn is its "neural network" toolbox (layers like LSTM, Linear),
+who is nicknamed as mn
+
+2) torch.manual_seed(42)
+    np.random.seed(42)
+
+
+-->Neural nets start with random weights. These two lines fix the randomness to a set value (42) 
+so every run gives the same result — reproducible,
+
+It's better to relate it take this The analogy for eg think of shuffling a deck of cards. 
+Normally each shuffle is different. But if you could tell the shuffler "always shuffle in this exact pattern," 
+you'd get the same card order every time. The seed is that instruction. The number 42 is arbitrary — could be 0, 7, 1000; it just has to be consistent.
+
+3)Settings
+PROC = "data/processed/central_rain_2005_2023.nc"
+FIG_DIR = "outputs"; MODEL_DIR = "models"
+WINDOW = 30                 # last 30 days -> predict next day
+TEST_START = "2021-01-01"   # same split as baselines
+BASELINE_RMSE = 2.68        # the bar to beat
+EPOCHS = 60
+
+--> It uses 30 days of history to predict day 31; test on 2021+; the bar is 2.68; train up to 60 passes over the data (an "epoch" = one full pass).
+Ok this is too much to understand at once , let's decipher them one by one , step by step : 
+
+1. "Use 30 days of history to predict day 31"
+WINDOW = 30
+This is how much past the model looks at to make one prediction. WINDOW = 30 means: to predict tomorrow's rainfall, feed the model the last 30 days of rainfall.
+Think of it like a weather-guesser who, before predicting tomorrow, looks back at the past month. 30 days data analyzed to compute 1 day out (day 31).
+It's a knob because you could change it: WINDOW = 7 (look back 1 week) or WINDOW = 60 (look back 2 months). 
+
+2. "Test on 2021+"
+TEST_START = "2021-01-01"
+This is the line that separates "study material" from "exam." Everything before 2021 (2005–2020) = data the model learns from. 
+Everything from 2021 on (2021–2023) = data we test on
+
+3. "The bar is 2.68"
+BASELINE_RMSE = 2.68
+This is just storing your target number so the code can compare against it. It's the score the dumb baseline got. At the end, the model checks "is my RMSE below 2.68?" to decide WIN or not. 
+Not really a knob you'd tune — it's a fact you're carrying over from the baseline step.
+
+4. "Train up to 60 passes — an epoch = one full pass"
+EPOCHS = 60
+This is how many times the model studies the whole training set. One epoch = the model goes through all the training examples once, learning a little. 
+EPOCHS = 60 means "study the material up to 60 times."
+Let's relate it studying for an exam. 
+Reading your notes once (1 epoch) — you've barely learned it. 
+Reading them 60 times (60 epochs) — now it's sticking. 
+Each pass, the model nudges its weights to get a bit better.
+
+4)Error functions
+def rmse(p, t): return float(np.sqrt(np.nanmean((p - t) ** 2)))
+def mae(p, t):  return float(np.nanmean(np.abs(p - t)))
+Same RMSE/MAE as in baselines — your scoring tools , we are comparing them to the actual AI model 
+sort of competitions of sort as to who will win and score a lower RSME . 
+
+5)make_windows — turning a series into training examples
+def make_windows(values, dates, window):
+    X, y, d = [], [], []
+    for i in range(window, len(values)):
+        X.append(values[i - window:i])   # the previous 30 days
+        y.append(values[i])              # the day to predict
+        d.append(dates[i])               # its date
+    return np.array(X), np.array(y), np.array(d, dtype="datetime64[ns]")
+
+So this little function is a bridge between "a list of daily rainfall numbers" and "training examples a model can learn from."
+We are chopping the RAW_DATA we took in the beginning for the year 2021-2023 and we are chopping it down into thousand little peices
+taking into account that each 30 day will predict the next day - Basically this is our overall goal . 
+
+---> Let's understand it line by line :
+A) def make_windows(values, dates, window):
+Takes three inputs: values (the rainfall numbers), dates (their dates), and window (how many days to look back i.e 30 days )
+B) X, y, d = [], [], [] : 
+Three empty lists to fill up:
+
+X — the inputs (each is a window of past days).
+y — the answers (each is the day to predict).
+d — the dates of those answer-days.
+
+(X, y is the standard ML naming: X = questions, y = answers.)
+C) for i in range(window, len(values)):
+A loop. i is the index of the day we're trying to predict.we skip the first window days and begin where a full
+look-back is possible. It runs up to the last day (len(values) = 30 )
+Basically it's a little confusing but whatever let's understand it , 
+
+So It starts at 30, not 0.
+Why start at 30? To predict a day, you need the 30 days before it. So:
+Could we predict day 0? No — there are zero days before it. Can't look back 30.
+Day 5? No — only 5 days exist before it. Not enough for a 30-day window.
+Day 29? Still no — only 29 days before it (days 0–28). One short.
+Day 30? ✅ Yes! Days 0–29 sit before it — exactly 30 days. 
+First time a full look-back is possible.
+
+So we skip days 0–29 (they can't be predicted, not enough history) and start at day 30.
+ The loop runs i = 30, 31, 32, ... 6938 (the last day).
+
+The slice with window = 30
+X.append(values[i - window:i])   # values[i-30:i]
+values[i-30 : i] means "give me the values from index i-30 up to but not including i." 
+That's the 30 days right before day i.
+For i = 30: values[0:30] = days 0,1,2,...,29 — the first 30 days. That's the input. The answer is day 30.
+For i = 31: values[1:31] = days 1,2,...,30. Window slid one day right. Answer is day 31.
+For i = 100: values[70:100] = days 70 through 99 (30 days). Answer is day 100.
+
+<<<IMPORTANT>>
+Look carefully at values[i-30 : i]. In Python slicing, :i means stop before i — day i itself is not included in the slice.
+So for i = 30:
+
+Input (X) = days 0 to 29 (values[0:30])
+Answer (y) = day 30 (values[30])
+Day 30 is the answer, and it is never inside the 30-day input. 
+The input is purely days before it. So the model is predicting day 31 all by itself 
+by all lonsome prediction . 
+
+Basically , if the slice were values[i-30 : i+1], it would include day 30 in the input 
+— meaning the model would see the answer hidden in its own question. 
+It'd "predict" day 30 by just reading day 30. That's cheating (data leakage) — it'd score amazingly in testing but be useless 
+in real life, because in reality you never have tomorrow's value when predicting tomorrow.
+
+By stopping at :i (excluding day i), we guarantee the model only ever sees the past and must genuinely predict 
+the next day from it — exactly the real-world situation. 
+
+To visualize it see this ::
+i = 30:   [day 0 ... day 29]  →  predict day 30
+              30 days input        answer (NOT in input)
+
+i = 31:   [day 1 ... day 30]  →  predict day 31
+              window slid →1
+
+i = 32:   [day 2 ... day 31]  →  predict day 32
+
+From 6,939 days you get 6,909 examples 
+(you lose the first 30, which have no history and are all probably day 0 itself).
+
+6) The LSTM network <<<IMPORTANT>>
+class RainLSTM(nn.Module):
+    def __init__(self, hidden=32):
+        super().__init__()
+        self.lstm = nn.LSTM(input_size=1, hidden_size=hidden, batch_first=True)
+        self.head = nn.Sequential(nn.Linear(hidden, 16), nn.ReLU(), nn.Linear(16, 1))
+
+**This is basically the brain of the model** , what does it signify let's decode it :
+nn.LSTM(...) — the LSTM layer. It reads the sequence day-by-day and keeps a "memory" of 32 numbers (hidden=32)
+summarizing what it's seen. input_size=1 = one value per day (rainfall).
+batch_first=True = data shape is (batch, time, features).
+self.head — a small "decision" stack that takes the LSTM's
+32-number memory squeezes it to 16 (Linear) into ReLU (keeps useful signal) 
+and then down to 1 number: the predicted rainfall.
+
+7) def forward(self, x):
+        out, _ = self.lstm(x)      # process the 30 days
+        last = out[:, -1, :]       # take the final day's memory
+        return self.head(last).squeeze(-1)
+
+forward = All the key things happening as the data move through LSTM .
+we grab its memory after the last day (out[:, -1, :] = the final, most-informed state); then the
+head turns that into one prediction. squeeze just tidies the shape.
+
+8)Load + region-average + normalisation
+ds = xr.open_dataset(PROC)
+series = ds["rain"].mean(dim=["lat", "lon"]).to_series()
+series.index = pd.to_datetime(series.index)
+values = series.values.astype("float32"); dates = series.index
+Open the file, average the 33×41 grid into one number per day
+make sure dates are real dates
+
+9) train_mask = dates < TEST_START
+   mu = values[train_mask].mean(); sd = values[train_mask].std()
+   norm = (values - mu) / sd
+
+Neural nets train badly on raw numbers with weird scales, so we rescale: subtract the mean (mu), 
+divide by the spread (sd). Obviously, mu/sd come from training years only . 
+
+10) Build windows + split
+pythonX, y, tdate = make_windows(norm, dates, WINDOW)
+X = X[..., np.newaxis]                      # shape -> (samples, 30, 1)
+is_test = tdate >= np.datetime64(TEST_START)
+Xtr = torch.tensor(X[~is_test]); ytr = torch.tensor(y[~is_test])
+Xte = torch.tensor(X[is_test]);  yte = y[is_test]
+Make all the examples. 
+what happens is that np.newaxis adds the "1 feature" dimension PyTorch's LSTM expects it's is_test flags which 
+examples predict a 2021+ day. ~is_test = "not test" = train. torch.tensor(...) converts numpy arrays into PyTorch's format. 
+So Xtr/ytr = training, Xte/yte = test — same split as baselines.
+Simple Right ......
+
+11)Training setup
+model = RainLSTM()
+opt = torch.optim.Adam(model.parameters(), lr=1e-3)
+loss_fn = nn.MSELoss()
+Build the network. Adam (not chinmay) is the optimiser — it adjusts the network's weights to reduce error;
+lr=1e-3 is the learning rate (step size). 
+
+12) n_val = int(len(Xtr) * 0.1)
+Xt, yt = Xtr[:-n_val], ytr[:-n_val]    # 90% to actually train on
+Xv, yv = Xtr[-n_val:], ytr[-n_val:]    # last 10% to watch for overfitting
+
+small validation chunk off the end of training, to monitor performance on data it's not
+training on (basically a rain check for early-warning for overfitting).
+
+13) The training loop
+best_val = float("inf"); best_state = None; patience = 6; bad = 0
+for epoch in range(1, EPOCHS + 1):
+    model.train()
+    perm = torch.randperm(len(Xt))
+    for i in range(0, len(Xt), 32):
+        idx = perm[i:i + 32]
+        opt.zero_grad()
+        out = model(Xt[idx])
+        loss = loss_fn(out, yt[idx])
+        loss.backward()
+        opt.step()
+
+This is the actual learning
+What it does bro is :
+
+--->randperm shuffles the examples.
+
+--->Inner loop takes them in batches of 32.
+model(...) predicts → loss_fn measures how wrong → loss.backward() computes which way to nudge each 
+weight → opt.step() applies the nudge. Repeat — this is the model "learns."
+
+14) model.eval()
+    with torch.no_grad():
+        vloss = loss_fn(model(Xv), yv).item()
+    print(f"  epoch {epoch:2d}/{EPOCHS}   val_loss {vloss:.4f}")
+    if vloss < best_val:
+        best_val = vloss; best_state = model.state_dict(); bad = 0
+    else:
+        bad += 1
+        if bad >= patience: print("  early stopping."); break
+model.load_state_dict(best_state)
+
+After each epoch, check error on the validation chunk is done . If it improved, save this as the best version. 
+If it stops improving for 6 epochs straight (patience), early stop — no point overtraining
+
+15) Predict + un-normalise
+model.eval()
+with torch.no_grad():
+    pred_norm = model(Xte).numpy()
+pred = np.clip(pred_norm * sd + mu, 0, None)   # back to mm, no negatives
+true = yte * sd + mu
+
+So here we Run the trained model on the test set. 
+Predictions come out normalised, so * sd + mu reverses the scaling back to real mm
+
+16)Score vs baseline
+m_rmse = rmse(pred, true); m_mae = mae(pred, true)
+... prints the comparison box ...
+if m_rmse < BASELINE_RMSE:
+    gain = (BASELINE_RMSE - m_rmse) / BASELINE_RMSE * 100
+    print(f"  RESULT: AI beats the baseline by {gain:.1f}% lower error.  WIN.")
+
+Compute the model's RMSE/MAE, print the box you saw, and if RMSE < 2.68, 
+calculate the % improvement and declare the win.
+
+17)Save model + chart
+torch.save(model.state_dict(), "models/lstm_rain.pt")
+... plt.plot actual vs pred for first 120 test days ...
+plt.savefig("outputs/model_vs_actual.png")
+Save the trained weights to a .pt file (so you can reuse the model without retraining),
+and draw the actual-vs-prediction chart you just looked at.

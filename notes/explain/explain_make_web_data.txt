@@ -1,0 +1,111 @@
+<!--Let's try to understand make_web_data.py file -->
+
+BIG PICTURE FIRST :
+This is the bridge between the PYTHON pipeline and the WEB dashboard. The
+pipeline writes JSON files (scenario.json, forecast.json, metrics.json). This
+script reads them and writes ONE file -- web/vayu-data.js -- that the dashboard
+loads. After this, NOTHING on the dashboard is hardcoded: every number flows
+from a file the pipeline produced.
+
+
+THE PROBLEM IT SOLVES (the "why a .js and not .json" trick) <<<IMPORTANT>>>
+When we open the dashboard by DOUBLE-CLICKING it, the browser runs it as a
+"file://" page. For security, the browser BLOCKS JavaScript from fetching a
+local .json(.js) file off the computer's disk and thus it never loads in the webpage.
+BUT a <script src="..."> tag IS allowed to load a local file.
+So a workaround is that instead of letting the page fetch scenario.json, we wrap the data inside a
+.js file that just sets a global variable (window.VAYU_DATA = {...}), and the
+dashboard loads THAT with a script tag. And now it Works on double-click , See that's the entire 
+reason this script exists.
+
+
+1) import os, json ; from datetime import datetime
+--> json as usual. datetime is used to turn "2024-01-01" into a nice
+    "Jan 1" label for the forecast chart.
+   os we are familiar with
+
+2) Settings
+OUT_DIR = "outputs"   # where the pipeline writes its JSON
+WEB_DIR = "web"       # where vayu-dashboard.html lives
+--> Read from outputs/, write into web/ (right next to the HTML, so the page
+    finds it).
+
+3) _load(name)
+   Tiny helper: open outputs/<name> and json.load it into a Python dict.
+
+4) _label(date_str)
+   "2024-01-01" -> a datetime -> "Jan 1" (month abbrev + day, no leading zero).
+   Just makes the forecast x-axis read nicely.
+
+
+5) main() -- builds the data, step by step .
+
+(A) SCENARIO (required)
+   sc = _load("scenario.json")
+   b  = sc["baseline"];  curves = sc.get("curves", {})
+   data = {"scenario": {
+       "annualRain":      b["annual_rain_mm"],
+       "baseHeatwave":    b["heatwave_days"],     # 40, real
+       "baseWarmNights":  b.get("warm_nights"),   # 54, real
+       "heatwaveCurve":   curves.get("heatwave_days"),   # the whole curve
+       "warmNightsCurve": curves.get("warm_nights"),
+   }}
+   --> Pull the real baselines + the warming CURVES out of scenario.json and
+       rename the keys to what the dashboard's JavaScript expects
+       (annual_rain_mm -> annualRain, etc.). The curves let the slider
+       move between different values .
+
+(B) FORECAST (it will work only if forecast.json exists)
+   arr = _load("forecast.json")["forecast"]
+   data["forecast"] = {
+       "days": [_label(d["date"]) for d in arr],   # ["Jan 1".."Jan 7"]
+       "rain": [d["rain"] for d in arr],
+       "high": [d["high"] for d in arr],
+       "low":  [d.get("low", 0) for d in arr],
+   }
+   --> Flatten the list of {date,rain,low,high} objects into separate arrays
+       (days/rain/high/low) -- the shape the forecast chart wants.
+   --> "optional" = wrapped in `if os.path.exists(...)`. What if there exsists , No forecast file?
+       It just skips it instead of crashing.
+
+(C) MODEL SKILL (optional -- only if metrics.json exists)
+   m = _load("metrics.json")
+   data["model"] = {
+       "gain":        m.get("gain_pct"),          # 7.7
+       "rmseGuess":   m.get("rmse_persistence"),  # 2.68
+       "rmseAI":      m.get("rmse_ai"),           # 2.47
+       "trainDays":   m.get("train_days"),
+       "yearsTested": m.get("years_tested"),
+   }
+   --> Pull the model-vs-baseline numbers (written by model.py) so the
+       "Is our AI any good?" bars become handpicked from the data rather than being hardcoded. 
+
+
+6) Write the file
+   os.makedirs(WEB_DIR, exist_ok=True)
+   with open("web/vayu-data.js", "w") as f:
+       f.write("window.VAYU_DATA = " + json.dumps(data, indent=2) + ";\n")
+
+   --> json.dumps turns the Python dict into JSON text. We glue
+       "window.VAYU_DATA = " in front and ";" behind, so the file is valid
+       JavaScript that, when the browser loads it, creates a global object
+       the dashboard reads. That single global carries all the data in scenario + forecast +
+       model. 
+
+
+ **THE WHOLE FLOW**
+--------------------------
+Scenario.py  -> outputs/scenario.json   (rain, drought, heatwave, warm nights)
+forecast.py  -> outputs/forecast.json   (7-day forecast)
+model.py     -> outputs/metrics.json    (RMSE 2.68 / 2.47, gain 7.7%)
+        |
+        v
+make_web_data.py  -> web/vayu-data.js   (one file, all the numbers)
+        |
+        v
+vayu-dashboard.html reads window.VAYU_DATA  -> every tile is live
+
+( THE REFRESH LOOP ):
+re-run the pipeline  ->  python3 scripts/make_web_data.py  ->  reload page.
+The site is NEVER hand-edit , the dashboard just take the exact numbers from the data. The numbers are live in the data
+file; the HTML just reads them.

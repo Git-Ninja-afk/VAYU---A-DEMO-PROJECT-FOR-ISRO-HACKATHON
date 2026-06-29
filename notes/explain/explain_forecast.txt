@@ -1,0 +1,125 @@
+1) The imports
+import os, json
+import numpy as np
+import pandas as pd
+import xarray as xr
+import matplotlib.pyplot as plt
+import torch
+from model import RainLSTM, WINDOW, TEST_START, PROC
+
+Same old thing (os, numpy, pandas, xarray, plt, torch). Two new things we have added are :
+
+json — a tool to save data as a clean .json file (we'll use it to feed the dashboard later).
+. Instead of rewriting the LSTM brain again, we just borrow it from model.py.
+We will grab the Rain LSTM class and a few settings (WINDOW, TEST_START, PROC).
+That's why model.py has to live in the same scripts/ folder.
+
+
+2) The settings
+pythonFIG_DIR = "outputs"
+MODEL_PATH = os.path.join("models", "lstm_rain.pt")
+HORIZON = 7          # forecast 7 days ahead
+Z = 1.96             # 95% band
+
+MODEL_PATH — where your trained brain is saved (lstm_rain.pt from last file).
+HORIZON = 7 — how many days into the future to forecast. If you want to increase the number this is your man ,  Change this one number to see the magic happen
+Z = 1.96 — a magic stats number meaning "95% of stuff falls within this range." 
+We'll use it to size the band , it's just a pre-defined estimation that we need to use for 
+estimation in our model . 
+
+
+3) working with model's own prediction to predict the future (Ironic it is ) (THE most important function) 
+pythondef forecast_ahead(model, history_norm, horizon):
+    seq = list(history_norm)
+    preds = []
+    for _ in range(horizon):
+        x = torch.tensor(np.array(seq[-WINDOW:], dtype="float32")[None, :, None])
+        with torch.no_grad():
+            p = model(x).item()
+        preds.append(p)
+        seq.append(p)            # <-- THE TRICK
+    return np.array(preds)
+Okay so here's the problem: the model needs 30 days of history to predict the next day. Cool for day 1. But for day 2... it needs day 1's value — which hasn't happened yet
+Simple solution we feed the model its own prediction and pretend it's real. 
+Walk through it:
+
+seq = list(history_norm) → start with the recent days.
+Loop 7 times (for _ in range(horizon)):
+
+seq[-WINDOW:] → grab the last 30 days of the sequence.
+model(x).item() → predict the next day, call it p.
+preds.append(p) → save that prediction.
+seq.append(p) → THIS is the magic. Glue the prediction onto the history, so next loop the model uses it as if it were a real day.
+
+
+
+That one line seq.append(p) is when the model is using it's own prediction to predict the future . Without it, you'd predict the same day 7 times like a chinmay pretty dumb right !!!. (The [None, :, None] is the junk shape PyTorch wants )
+Catch: every time it eats its own guess, tiny errors pile up. So day 7 is shakier than day 1. That's the way uncertainity grows . 
+4) Load the data + un-do the scaling setup
+ds = xr.open_dataset(PROC)
+series = ds["rain"].mean(dim=["lat", "lon"]).to_series()
+series.index = pd.to_datetime(series.index)
+values = series.values.astype("float32")
+dates = series.index
+mu = values[dates < TEST_START].mean()
+sd = values[dates < TEST_START].std()
+norm = (values - mu) / sd
+It's the Same as model.py — open the file, squash the grid to one number per day, then normalise as we did to mm in model.py (read model.txt for more information).
+model.load_state_dict(torch.load(MODEL_PATH))
+model.eval()
+built an empty Rain_LSTM, then located load_state_dict filled the trained weights back in . It's like loading a saved game — you don't replay the whole campaign,
+you just load your progress. model.eval() = "we're using it now, not training."
+
+6) Measuring uncertainty for real (not faking it) 📏
+pythontest_idx = np.where(dates >= np.datetime64(TEST_START))[0]
+starts = [i for i in test_idx if i >= WINDOW and i + HORIZON <= len(values)]
+errors = [[] for _ in range(HORIZON)]
+for s in starts[::2]:
+    fc = forecast_ahead(model, norm[s - WINDOW:s], HORIZON)
+    actual = norm[s:s + HORIZON]
+    for h in range(HORIZON):
+        errors[h].append(fc[h] - actual[h])
+band_mm = np.array([np.std(e) for e in errors]) * sd
+Here We go through the test years and run hundreds of little experiments: "stand on this day, forecast the next 7, then check what actually happened, 
+and record how far off I was on day 1, day 2, … day 7. Just that !!!"
+
+starts → all the valid days we can stand on (need 30 days before + 7 days after).
+starts[::2] → the [::2] means "every 2nd one" — just to go faster.
+errors[h].append(fc[h] - actual[h]) → bank the miss for each lead day.
+np.std(e) → standard deviation = error computation ,  Small = confident, tight band. Big = unsure, wide band.
+* sd → convert that spread back to real mm.
+
+This is why your terminal showed ±2.39 on day 1 growing to ±4.27 on day 7 — measured from real errors, and it grows because of the ai eating it's own prediction to predict the future. 
+
+7) Make YOUR actual 7-day forecast
+last_hist = norm[-WINDOW:]
+fc_norm = forecast_ahead(model, last_hist, HORIZON)
+fc_mm = np.clip(fc_norm * sd + mu, 0, None)
+lower = np.clip(fc_mm - Z * band_mm, 0, None)
+upper = fc_mm + Z * band_mm
+fc_dates = pd.date_range(dates[-1] + pd.Timedelta(days=1), periods=HORIZON)
+You guys know how benzene was made right , snake ate his own tail , here now we are the same snake trick :
+
+last_hist = norm[-WINDOW:] → grab the most recent 30 days (end of 2023).(Brother it's the last available imd data , imd takes time to release it's report last release are till 2023 only , so yeah ....)
+forecast_ahead(...) → forecast 7 days forward.
+fc_norm * sd + mu → un-scale back to real mm. np.clip(..., 0, None) → no negative rain allowed.
+lower / upper → wrap the band around it (Z * band_mm = the 95% range). Lower clipped at 0 (can't rain negative).
+fc_dates → generate the 7 future dates (Jan 1–7, 2024).
+
+
+8) Save forecast.json — the quiet hero 🎯
+pythonpayload = { ... "forecast": [ {"date":..., "rain":..., "low":..., "high":...} ... ] }
+with open(os.path.join(FIG_DIR, "forecast.json"), "w") as f:
+    json.dump(payload, f, indent=2)
+This packs the forecast into a tidy little data file — dates, rain, low, high. This JSON will go exactly as it is to the dashboard .  
+
+
+9) Draw the picture
+plt.plot(dates[-tail:], values[-tail:], ...)        # recent real rain (black)
+plt.plot(fc_dates, fc_mm, ...)                       # forecast (teal)
+plt.fill_between(fc_dates, lower, upper, alpha=.20)  # the shaded band
+plt.axvline(dates[-1], ...)                          # "forecast starts" line
+
+Just matplotlib drawing what we computed: black line = recent real rain, dashed line = where forecast begins, teal = your 7-day forecast, shaded fan = uncertainty.
+The fan widening to the right , the future prediction in our screen .
+

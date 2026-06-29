@@ -1,0 +1,107 @@
+{
+  "region": "Central India",
+  "baseline": {
+    "annual_rain_mm": 1058,
+    "monsoon_rain_mm": 932,
+    "heatwave_days": 40,
+    "warm_nights": 54
+  },
+  "sensitivity": {
+    "heatwave_days_per_degC": 13.1,
+    "warm_nights_per_degC": 34.3
+  },
+  "sources": {
+    "rainfall": "IMD gridded rainfall (0.25deg)",
+    "heatwave": "IMD tmax >=40C",
+    "warm_nights": "IMD tmin >=25C"
+  },
+  "curves": {
+    "heatwave_days": {
+      "0": 40.4,
+      "0.5": 47.0,
+      "1": 53.5,
+      "1.5": 59.7,
+      "2": 65.7,
+      "2.5": 71.6,
+      "3": 77.6,
+      "4": 89.8
+    },
+    "warm_nights": {
+      "0": 54.3,
+      "0.5": 69.5,
+      "1": 88.6,
+      "1.5": 111.0,
+      "2": 133.9,
+      "2.5": 154.4,
+      "3": 171.2,
+      "4": 193.1
+    }
+  },
+  "examples": [
+    {
+      "rain_change_pct": 0,
+      "warming_c": 0.0,
+      "projected_annual_rain_mm": 1058,
+      "rain_delta_mm": 0,
+      "drought_category": "Normal",
+      "drought_level": "low",
+      "drought_note": "water balance near normal",
+      "heatwave_days": 40,
+      "heatwave_delta": 0,
+      "warm_nights": 54,
+      "warm_nights_delta": 0
+    },
+    {
+      "rain_change_pct": -30,
+      "warming_c": 0.0,
+      "projected_annual_rain_mm": 741,
+      "rain_delta_mm": -317,
+      "drought_category": "Deficient (drought)",
+      "drought_level": "high",
+      "drought_note": "rainfall shortfall, crop & water stress",
+      "heatwave_days": 40,
+      "heatwave_delta": 0,
+      "warm_nights": 54,
+      "warm_nights_delta": 0
+    },
+    {
+      "rain_change_pct": 0,
+      "warming_c": 2.0,
+      "projected_annual_rain_mm": 1058,
+      "rain_delta_mm": 0,
+      "drought_category": "Normal",
+      "drought_level": "low",
+      "drought_note": "water balance near normal",
+      "heatwave_days": 66,
+      "heatwave_delta": 26,
+      "warm_nights": 134,
+      "warm_nights_delta": 80
+    },
+    {
+      "rain_change_pct": -30,
+      "warming_c": 2.0,
+      "projected_annual_rain_mm": 741,
+      "rain_delta_mm": -317,
+      "drought_category": "Deficient (drought)",
+      "drought_level": "high",
+      "drought_note": "rainfall shortfall, crop & water stress",
+      "heatwave_days": 66,
+      "heatwave_delta": 26,
+      "warm_nights": 134,
+      "warm_nights_delta": 80
+    },
+    {
+      "rain_change_pct": 20,
+      "warming_c": 0.0,
+      "projected_annual_rain_mm": 1270,
+      "rain_delta_mm": 212,
+      "drought_category": "Excess (flood watch)",
+      "drought_level": "high",
+      "drought_note": "surplus rainfall, runoff/flood risk",
+      "heatwave_days": 40,
+      "heatwave_delta": 0,
+      "warm_nights": 54,
+      "warm_nights_delta": 0
+    }
+  ]
+}

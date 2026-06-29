@@ -1,0 +1,25 @@
+# data (big, regenerable — never commit)
+data/
+*.nc
+*.grd
+*.GRD
+
+# trained model weights
+models/
+*.pt
+*.h5
+*.keras
+*.pkl
+
+# python junk
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+venv/
+.venv/
+env/
+
+# os / editor
+.DS_Store
+.vscode/
+.history/

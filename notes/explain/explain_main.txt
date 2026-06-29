@@ -1,0 +1,94 @@
+So let's understand the code one by one step by step : 
+
+---> import os - what this command line does , it simply let me use the os 
+library in my python file .
+So why do we os library one may ask , it is simply to create folder , as 
+you can see the the next thing we are downloading is the imdlib data for 
+the year 2022 and 2023 so this data needs to be saved somewhere , this is 
+where os library comes into picture as it helps in storing imdlib massive data 
+like for this working data we are storing rainfall data for the indian subcontinent
+from 2021 to 2025 . 
+
+See the main job of imdlib is too download data from the imd govt. site so it doesn't limit it 
+to storing it to memory but it downloads actual files and the os compresses it all and stores it in 
+1 folder namely data as you can see . 
+
+Now import matplotlib also known as plt is too plot the data we have downloaded it's main job is plotting 
+and drawing as we could see when we run the file the plot/draw appears in another window .
+
+----> Now next command i.e os.makedirs("data/raw", exist_ok=True) -->
+What does it do it creates a folder (here the data folder) using the os library to store 
+the downloaded imdlib data files , exsist_ok=True just means that if the folder like that exsist 
+don't crash just carry on the work . This is because if we exclude this commands and run the program 
+it will work once and after that crash this command prevents it fro crashing . 
+
+----> Next command : data = imd.get_data("rain", 2022, 2023, fn_format="yearwise", file_dir="data/raw")
+This command tells the IMD's server: give me "rain" (rainfall), for years 2022 through 2023, one file per year (fn_format="yearwise"),
+and save them into data/raw. The result (a handle to that data) is stored in the variable data. This is the line that 
+printed Downloading: rain for year 2022/2023 → Download Successful.
+
+---> Next Command : ds = data.get_xarray()
+Converts raw files into something usable. 
+Those downloaded files are clunky binary which are unusable you can't directly use it as you can't figure head and tails out of it . 
+.get_xarray() turns them into an xarray Dataset — think of it as a smart 3D spreadsheet with 
+labelled axes: time, latitude, longitude. We store it in ds - this is a file which we will use at the time of plotting using mathplotlib 
+
+Next command : ds = ds.where(ds["rain"] != -999.0) : 
+So here we are cleaning out the clutter and throwing away the manipulated and fake data which can interfere with our imd data .
+So here the main think we need to focus on is .where(ds["rain"] != -999.0) , so imd after -999 fills this area with out of bound cells 
+and the indian ocean here we are excluding that area , if not our plot will appear more like a rectangle rather than the subcontinent shaped plot . 
+So we are saying ---> "keep every value that isn't -999, and turn the rest into NaN (blank)."
+
+Next  : print("Loaded:", ds.sizes)
+print(...) here displays whatever's inside the terminal. 
+The "Loaded:" is just a label so the output reads nicely.
+The part we have to focus is ds.sizes.
+Remember ds is xarray Dataset — the smart 3D container holding rainfall across time, latitude, and longitude. 
+.ds.sizes reports how big it is along each of those axes. It hands back something like:
+Loaded: Frozen({'time': 730, 'lat': 129, 'lon': 135})
+Reading that: 730 days, 129 latitude rows, 135 longitude columns. 
+it's telling the shape of the data so you can correctly download everything and see that nothing is missing .
+
+Next : # --- single day ---
+ds["rain"].sel(time="2023-07-15").plot(cmap="Blues")
+plt.title("IMD rainfall — 2023-07-15")
+plt.show()
+
+# --- monsoon average ---
+plt.figure()   # <- start a fresh figure
+ds["rain"].sel(time=slice("2023-06-01", "2023-08-31")).mean("time").plot(cmap="Blues")
+plt.title("Mean monsoon rainfall — JJA 2023")
+plt.show()
+
+
+plt.figure()   # <- start a fresh figure
+ds["rain"].sel(time=slice("2023-01-01","2023-12-31")).mean("time")
+plt.title("Mean monsoon rainfall — 2023")
+plt.show()
+
+
+plt.figure()   # <- start a fresh figure
+ds["rain"].mean("time")
+plt.title("Mean monsoon rainfall : 2022 - 2023")
+plt.show()
+
+So above one is data for single days that would be 730 days 
+and below that is the combined data for 2 years somewhat of you can say mean data . 
+
+So what does it say let's see :
+ds["rain"] — grab just the rainfall variable.
+.sel(time=slice("2023-06-01","2023-08-31")) — select only the monsoon months June–August 2023 (JJA = Jun/Jul/Aug).
+.sel(time=="2023-07-15") - select only the monsoon for the day 15 july 2023
+.mean("time") — average across all those days, collapsing 92 daily maps into one average map.
+.plot(cmap="Blues") — draw it, coloured in blue shades.
+plt.title(...) — add the heading.
+plt.show() — open the window so you can see it.
+
+so what these commands are they are the data taken from ds , remember ds which stores all the 730 days data , so it takes 
+data from those 730 days like for the mean monsoon for months June–August 2023 is been taken from the 730 days . Here we are taking 
+92 maps entirely for the 3 months and clubbing it down into 1 map . 
+
+<<<IMPORTANT>>> 
+see the more days you select the more your system would take time and it would be laggy , we have taken 3 months 
+i.e JJA because it's the time for most of the rain in the subcontinent taking data before it and after it is irrevelant and 
+it will slow our data indiscriminately slowing our system down significantly that's the reason we are going out with 3 months only . 
