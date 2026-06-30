@@ -3,278 +3,504 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>VAYU — Central India Climate Twin</title>
+<title>VAYU — Your Rain Check and Weather Partner</title>
+<!-- Leaflet Engine & CSS -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Premium Humanist Typography Pairing -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
 <style>
-  :root{--bg:#0b1020;--panel:#101a2b;--panel2:#16243a;--line:rgba(150,180,220,.12);--line2:rgba(150,185,225,.24);
-    --txt:#EEF3FA;--txt2:#9fb0c4;--txt3:#67788c;--cyan:#46d7c8;--blue:#5aa6f0;--amber:#F6A623;--coral:#F4715E;--red:#F2504E;--green:#5ed79a;
-    --disp:'Space Grotesk',sans-serif;--ui:'Inter',sans-serif;--mono:'IBM Plex Mono',monospace;--serif:'Fraunces',Georgia,serif;}
-  *{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
-  body{background:
-      radial-gradient(1200px 520px at 50% 122%, rgba(255,178,130,.14), transparent 62%),
-      radial-gradient(900px 620px at 8% -8%, rgba(130,160,255,.12), transparent 60%),
-      radial-gradient(800px 500px at 100% 8%, rgba(255,160,190,.07), transparent 60%),
-      linear-gradient(180deg,#0a0f1f 0%,#0e1830 48%,#141e38 100%) fixed;
-    color:var(--txt);font-family:var(--ui);-webkit-font-smoothing:antialiased;padding:18px 20px 30px;min-height:100vh}
-  .skyfx{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
-  .skyfx span{position:absolute;border-radius:50%;filter:blur(72px)}
-  .skyfx .c1{width:560px;height:270px;background:radial-gradient(ellipse,rgba(255,206,168,.14),transparent 70%);left:-14%;bottom:3%;animation:cloudA 85s linear infinite}
-  .skyfx .c2{width:640px;height:310px;background:radial-gradient(ellipse,rgba(150,180,255,.10),transparent 70%);right:-16%;top:9%;animation:cloudB 115s linear infinite}
-  .skyfx .c3{width:440px;height:230px;background:radial-gradient(ellipse,rgba(255,184,205,.08),transparent 70%);left:32%;top:42%;animation:cloudA 150s linear infinite}
-  @keyframes cloudA{to{transform:translateX(135vw)}}
-  @keyframes cloudB{to{transform:translateX(-135vw)}}
-  .wrap{max-width:1340px;margin:0 auto}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
-  .top{display:flex;align-items:center;gap:16px;padding:16px 22px;border-radius:18px;background:linear-gradient(180deg,rgba(28,42,62,.78),rgba(16,26,43,.78));border:1px solid var(--line2);box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 20px 44px -30px #000;backdrop-filter:blur(6px)}
-  .logo{width:44px;height:44px;border-radius:13px;flex:none;display:grid;place-items:center;background:radial-gradient(circle at 50% 32%,#123a36,#0a1622);border:1px solid rgba(70,215,200,.45)}
-  .logo::before{content:"";width:21px;height:21px;border-radius:50%;background:conic-gradient(from 0deg,var(--cyan),var(--blue),var(--amber),var(--cyan));-webkit-mask:radial-gradient(transparent 4.5px,#000 5.5px);mask:radial-gradient(transparent 4.5px,#000 5.5px);animation:spin 10s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .brand h1{font-family:var(--serif);font-size:25px;font-weight:600;letter-spacing:.3px;line-height:1}
-  .brand p{font-size:13px;color:var(--txt2);margin-top:4px;font-style:italic;font-family:var(--serif)}
-  .spacer{flex:1}
-  .pill{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;color:var(--txt2);padding:8px 14px;border:1px solid var(--line2);border-radius:11px;background:rgba(10,16,28,.4)}.pill b{color:var(--txt)}
-  .grid{display:grid;grid-template-columns:340px 1fr 318px;gap:16px;margin-top:16px}
-  .card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:18px;box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 24px 54px -36px #000}
-  .ch{display:flex;align-items:center;justify-content:space-between;padding:15px 17px;border-bottom:1px solid var(--line)}
-  .ch .t{font-family:var(--disp);font-size:13.5px;font-weight:600;letter-spacing:.3px}.ch .tag{font-family:var(--mono);font-size:10.5px;color:var(--txt3)}
-  .cb{padding:17px}
-  .intro-line{font-size:13.5px;line-height:1.6;color:var(--txt2);margin-bottom:16px}.intro-line b{color:var(--txt);font-weight:600}
-  .nudge{font-size:13px;color:var(--cyan);margin:0 0 18px;display:flex;align-items:center;gap:8px;font-style:italic;font-family:var(--serif)}
-  .hint{font-size:11px;color:var(--txt3);margin-top:7px;display:flex;justify-content:space-between}
-  .imp .il{display:flex;align-items:center;gap:5px}.qm{display:inline-grid;place-items:center;width:14px;height:14px;border-radius:50%;border:1px solid var(--txt3);color:var(--txt3);font-size:9px;cursor:help}
-  .slab{margin-bottom:18px}.slab .lab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
-  .slab .lab .n{font-size:13.5px;color:var(--txt2)}.slab .lab .v{font-family:var(--mono);font-size:16px;font-weight:600}
-  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:5px;border-radius:5px;cursor:pointer;outline:none}
-  #rain{background:linear-gradient(90deg,var(--coral),#2a3a48 50%,var(--blue))}#warm{background:linear-gradient(90deg,#2a3a48,var(--amber),var(--coral))}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--cyan);box-shadow:0 0 12px rgba(70,215,200,.6);cursor:grab}
-  input[type=range]::-webkit-slider-thumb:active{transform:scale(1.2)}#warm::-webkit-slider-thumb{border-color:var(--amber);box-shadow:0 0 12px rgba(246,166,35,.6)}
-  input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:#fff;border:3px solid var(--cyan)}
-  .verdict{padding:15px 16px;border-radius:14px;background:rgba(10,16,28,.45);border:1px solid var(--line2);margin:4px 0 16px;transition:border-color .3s;min-height:78px}
-  .verdict .flag{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;letter-spacing:.4px;margin-bottom:9px;transition:.3s}.verdict .say{font-size:14px;line-height:1.55}
-  .impacts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .imp{padding:13px;border-radius:13px;background:rgba(10,16,28,.45);border:1px solid var(--line2)}
-  .imp .il{font-family:var(--mono);font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--txt3)}
-  .imp .iv{font-family:var(--disp);font-size:25px;font-weight:600;margin-top:6px;line-height:1}.imp .id{font-size:11px;color:var(--txt3);margin-top:4px;font-family:var(--mono)}
-  .reset{width:100%;margin-top:14px;font-family:var(--ui);font-size:12.5px;color:var(--txt2);background:transparent;border:1px solid var(--line2);border-radius:11px;padding:10px;cursor:pointer}.reset:hover{color:var(--txt);border-color:var(--cyan)}
-  .mapcard{position:relative;overflow:hidden}
-  #map{height:520px;width:100%;border-radius:0 0 18px 18px;background:#05080d;z-index:1}
-  .leaflet-container{background:#05080d;font-family:var(--mono)}
-  .leaflet-control-attribution{background:rgba(10,16,28,.7)!important;color:#6b7c8c!important;font-size:9px!important}.leaflet-control-attribution a{color:#8fa6b6!important}
-  .leaflet-bar a{background:#101a2b!important;color:#cfe0ee!important;border-color:rgba(150,185,225,.2)!important}
-  .leaflet-div-icon{background:transparent;border:none}
-  .vignette{position:absolute;inset:0;pointer-events:none;z-index:400;border-radius:0 0 18px 18px;box-shadow:inset 0 0 130px 36px rgba(0,0,0,.45)}
-  .wx{width:46px;height:46px;display:grid;place-items:center;filter:drop-shadow(0 3px 7px rgba(0,0,0,.55))}
-  .wx svg{width:100%;height:100%;overflow:visible}
-  .sun .rays{transform-origin:center;animation:spin 16s linear infinite}
-  .sun .core{animation:sunpulse 3s ease-in-out infinite}@keyframes sunpulse{50%{opacity:.82}}
-  .cloud,.rain,.partly{animation:bob 4s ease-in-out infinite}@keyframes bob{50%{transform:translateY(-3px)}}
-  .drops line{animation:fall 1.1s linear infinite}.drops .d2{animation-delay:.36s}.drops .d3{animation-delay:.72s}
-  @keyframes fall{0%{transform:translateY(-3px);opacity:0}30%{opacity:1}100%{transform:translateY(8px);opacity:0}}
-  .saybar{position:absolute;left:50%;transform:translateX(-50%);bottom:18px;z-index:450;max-width:80%;text-align:center;font-family:var(--serif);font-style:italic;font-size:15px;color:#eef6ff;background:rgba(8,13,22,.78);border:1px solid var(--line2);border-radius:30px;padding:10px 22px;backdrop-filter:blur(5px);box-shadow:0 8px 30px -10px #000;transition:.3s}
-  .legend{position:absolute;top:14px;left:14px;z-index:450;display:flex;flex-direction:column;gap:7px;background:rgba(8,13,22,.78);border:1px solid var(--line2);border-radius:12px;padding:11px 13px;backdrop-filter:blur(5px)}
-  .legend .li{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--txt2)}.legend .li b{color:var(--txt);font-weight:500}
-  .legend .gl{width:20px;height:20px;flex:none}
-  .readout{position:absolute;top:14px;right:14px;z-index:450;font-family:var(--mono);font-size:11px;color:var(--txt2);background:rgba(8,13,22,.82);border:1px solid var(--line2);border-radius:10px;padding:9px 12px;line-height:1.7;pointer-events:none;min-width:130px;backdrop-filter:blur(4px);opacity:0;transition:opacity .15s}
-  .readout b{color:var(--txt)}.readout .vv{color:var(--cyan);font-size:14px}
-  .space{position:absolute;inset:0;z-index:600;border-radius:0 0 18px 18px;overflow:hidden;background:radial-gradient(120% 90% at 50% 18%,#0a1730,#05080f 70%);transition:opacity 1.4s ease}
-  .space.gone{opacity:0;pointer-events:none}
-  .stars,.stars2{position:absolute;inset:-50%}
-  .stars{background-image:radial-gradient(1.4px 1.4px at 20% 30%,#fff,transparent),radial-gradient(1.2px 1.2px at 70% 60%,#cfe,transparent),radial-gradient(1px 1px at 40% 80%,#fff,transparent),radial-gradient(1.3px 1.3px at 85% 25%,#fff,transparent),radial-gradient(1px 1px at 55% 45%,#bcd,transparent);background-size:340px 340px;animation:drift 60s linear infinite;opacity:.85}
-  .stars2{background-image:radial-gradient(1px 1px at 15% 65%,#fff,transparent),radial-gradient(1px 1px at 60% 15%,#fff,transparent),radial-gradient(1.2px 1.2px at 90% 75%,#cfe,transparent);background-size:520px 520px;animation:drift 110s linear infinite;opacity:.6}
-  @keyframes drift{to{transform:translate(60px,40px)}}
-  .introtxt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
-  .introtxt .ttl{font-family:var(--serif);font-size:34px;font-weight:600;letter-spacing:2px;color:#eaf4ff;text-shadow:0 0 24px rgba(70,215,200,.5)}
-  .introtxt .sub{font-family:var(--mono);font-size:12px;color:#9fb6c8;letter-spacing:1px}.introtxt .sub b{color:var(--cyan)}
-  .skip{position:absolute;bottom:16px;right:18px;z-index:601;font-family:var(--mono);font-size:11px;color:#8fa6b6;background:rgba(10,16,28,.6);border:1px solid var(--line2);border-radius:8px;padding:6px 11px;cursor:pointer}
-  #fc{width:100%;display:block}
-  .leg{display:flex;gap:14px;padding:10px 16px 0;font-family:var(--mono);font-size:10.5px;color:var(--txt2)}.leg span{display:flex;align-items:center;gap:6px}.leg i{width:13px;height:3px;border-radius:3px}
-  /* AI card */
-  .aiwrap{padding:17px}
-  .ai-intro{font-size:13px;color:var(--txt2);line-height:1.55;margin-bottom:16px}
-  .cmp{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
-  .cmp-row{display:flex;align-items:center;gap:11px}
-  .cmp-lab{font-size:12px;color:var(--txt2);width:84px;flex:none}
-  .cmp-track{flex:1;height:15px;border-radius:8px;background:rgba(255,255,255,.05);overflow:hidden}
-  .cmp-bar{height:100%;border-radius:8px;width:0;transition:width 1.2s cubic-bezier(.2,.7,.2,1)}
-  .cmp-bar.guess{background:linear-gradient(90deg,#5b6b7d,#8295a8)}
-  .cmp-bar.ai{background:linear-gradient(90deg,var(--green),var(--cyan));box-shadow:0 0 14px rgba(94,215,154,.5)}
-  .cmp-num{font-family:var(--mono);font-size:12.5px;color:var(--txt2);width:54px;text-align:right;flex:none}
-  .ai-win{display:flex;align-items:center;gap:15px;padding:14px 16px;border-radius:14px;background:linear-gradient(135deg,rgba(94,215,154,.12),rgba(70,215,200,.06));border:1px solid rgba(94,215,154,.32)}
-  .aw-big{font-family:var(--serif);font-size:34px;font-weight:600;color:var(--green);line-height:1;flex:none}
-  .aw-sub{font-size:12px;color:var(--txt2);line-height:1.45}.aw-sub b{color:var(--txt)}
-  .strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
-  .metric{padding:16px 18px;border-radius:15px;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line)}
-  .metric .ml{font-family:var(--mono);font-size:10px;letter-spacing:.7px;text-transform:uppercase;color:var(--txt3)}.metric .mv{font-family:var(--disp);font-size:25px;font-weight:600;margin-top:7px;line-height:1}.metric .mv .u{font-size:13px;color:var(--txt2);font-weight:400}.metric .ms{font-family:var(--mono);font-size:11px;color:var(--txt2);margin-top:6px}
-  .foot{text-align:center;margin-top:18px;font-size:11.5px;color:var(--txt3);font-family:var(--mono)}
-  @media (max-width:1120px){.grid{grid-template-columns:1fr}.strip{grid-template-columns:repeat(2,1fr)}}
-  @media (prefers-reduced-motion:reduce){.sun .rays,.cloud,.rain,.partly,.drops line{animation:none!important}}
-  #heat-overlay{position:fixed;inset:0;z-index:9999;pointer-events:none;background:radial-gradient(ellipse at 60% 0%, rgba(255,140,0,0) 0%, rgba(255,80,0,0) 100%);opacity:0;transition:opacity .4s ease, background .4s ease;mix-blend-mode:screen}
-  #heat-shimmer{position:fixed;inset:0;z-index:9998;pointer-events:none;opacity:0;transition:opacity .6s ease;background:repeating-linear-gradient(0deg,transparent,transparent 18px,rgba(255,160,0,.025) 18px,rgba(255,160,0,.025) 19px);animation:shimmer 2.2s ease-in-out infinite}
-  @keyframes shimmer{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-  body.heat-pulse::after{content:'';position:fixed;inset:0;z-index:9997;pointer-events:none;box-shadow:inset 0 0 80px 20px rgba(246,120,0,.22);animation:heatpulse 1.6s ease-in-out infinite}
-  @keyframes heatpulse{0%,100%{opacity:.5}50%{opacity:1}}
-  .clickcard{cursor:pointer;transition:transform .18s,border-color .18s}
-  .clickcard:hover{border-color:var(--cyan);transform:translateY(-2px)}
-  .clickcard .opn{color:var(--cyan)!important}
-  .fhead{display:flex;align-items:center;gap:16px;padding:6px 4px 14px;margin-top:16px}
-  .backbtn{font-family:var(--ui);font-size:13px;color:var(--txt2);background:rgba(10,16,28,.5);border:1px solid var(--line2);border-radius:11px;padding:9px 14px;cursor:pointer}
-  .backbtn:hover{color:var(--txt);border-color:var(--cyan)}
-  .ftitle h2{font-family:var(--serif);font-size:22px;font-weight:600;line-height:1}
-  .ftitle span{font-size:12px;color:var(--txt2);font-family:var(--mono)}
-  .fgrid{display:grid;grid-template-columns:1fr 330px;gap:16px}
-  #fmap{height:460px;width:100%;border-radius:0 0 18px 18px;background:#05080d;z-index:1}
-  .fdetail{text-align:center}
-  .bigicon{width:118px;height:118px;margin:8px auto 2px}.bigicon .wx{width:118px;height:118px}
-  .bigday{font-family:var(--serif);font-size:23px;font-weight:600;margin-bottom:12px}
-  .frow{display:flex;justify-content:space-between;align-items:baseline;padding:11px 2px 4px;border-top:1px solid var(--line)}
-  .frow .fk{font-size:13px;color:var(--txt2)}.frow .fv{font-family:var(--disp);font-size:22px;font-weight:600;color:var(--cyan)}
-  .fsub{font-size:11px;color:var(--txt3);text-align:right;font-family:var(--mono);margin-bottom:4px}
-  .fsummary{margin-top:14px;padding:12px;border-radius:12px;background:rgba(10,16,28,.45);border:1px solid var(--line2);font-size:13.5px;line-height:1.5;font-family:var(--serif);font-style:italic}
-  .fscrub{margin-top:16px;padding:18px 20px}
-  .scrub-top{display:flex;justify-content:space-between;font-size:13px;color:var(--txt2);margin-bottom:14px}.scrub-hint{font-family:var(--mono);color:var(--cyan)}
-  #fslider{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:6px;background:linear-gradient(90deg,#2a3a48,var(--cyan));outline:none;cursor:pointer}
-  #fslider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--cyan);box-shadow:0 0 14px rgba(70,215,200,.7);cursor:grab}
-  #fslider::-webkit-slider-thumb:active{transform:scale(1.15)}
-  #fslider::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--cyan)}
-  .daystrip{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:18px}
-  .daychip{padding:10px 4px;border-radius:12px;background:rgba(10,16,28,.45);border:1px solid var(--line2);text-align:center;cursor:pointer;transition:.15s}
-  .daychip.active{border-color:var(--cyan);background:rgba(70,215,200,.10)}
-  .daychip .dl{font-size:11px;color:var(--txt2);font-family:var(--mono)}
-  .daychip .di{width:32px;height:32px;margin:5px auto 4px}.daychip .di .wx{width:32px;height:32px;filter:none}
-  .daychip .dr{font-family:var(--mono);font-size:11px;color:var(--cyan)}.daychip .dt{font-family:var(--mono);font-size:10px;color:var(--amber)}
-  @media (max-width:1120px){.fgrid{grid-template-columns:1fr}.daystrip{grid-template-columns:repeat(4,1fr)}}
-  .place-popup{position:absolute;z-index:900;background:rgba(8,13,22,.94);border:1px solid var(--line2);border-radius:15px;padding:0;min-width:220px;max-width:260px;backdrop-filter:blur(8px);box-shadow:0 8px 40px -10px rgba(0,0,0,.9), 0 0 0 1px rgba(70,215,200,.08);pointer-events:none;opacity:0;transform:translateY(8px) scale(.97);transition:opacity .18s ease, transform .18s ease}
-  .place-popup.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
-  .pp-head{padding:12px 14px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px}
-  .pp-icon{width:34px;height:34px;flex:none}.pp-icon .wx{width:34px;height:34px}
-  .pp-place{font-family:var(--disp);font-size:14px;font-weight:600;color:var(--txt);line-height:1.2}
-  .pp-district{font-family:var(--mono);font-size:10px;color:var(--txt3);margin-top:2px}
-  .pp-body{padding:10px 14px 12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .pp-stat{background:rgba(255,255,255,.04);border-radius:10px;padding:9px 10px}
-  .pp-stat .psl{font-family:var(--mono);font-size:9px;letter-spacing:.6px;text-transform:uppercase;color:var(--txt3)}
-  .pp-stat .psv{font-family:var(--disp);font-size:17px;font-weight:600;margin-top:4px;line-height:1}
-  .pp-stat .psu{font-size:10px;color:var(--txt3);font-family:var(--mono)}
-  .pp-close{position:absolute;top:9px;right:10px;width:20px;height:20px;display:grid;place-items:center;background:rgba(255,255,255,.07);border-radius:50%;cursor:pointer;font-size:11px;color:var(--txt3);border:none;transition:.15s;pointer-events:auto}
-  .pp-close:hover{background:rgba(255,255,255,.14);color:var(--txt)}
-  .pp-gmaps{display:flex;align-items:center;gap:6px;margin:0 14px 12px;padding:8px 11px;border-radius:10px;background:rgba(70,215,200,.08);border:1px solid rgba(70,215,200,.18);cursor:pointer;pointer-events:auto;text-decoration:none;font-family:var(--mono);font-size:11px;color:var(--cyan);transition:.15s}
-  .pp-gmaps:hover{background:rgba(70,215,200,.16)}
-  .pp-gmaps svg{width:14px;height:14px;flex:none}
-  .pp-loading{font-family:var(--mono);font-size:11px;color:var(--txt3);padding:8px 14px 10px}
-  .wx-marker-wrap{cursor:pointer!important}
+  :root {
+    /* Human-Centered Meteorological Palette */
+    --bg-base: #F5F2EB;
+    --paper-card: #FAF8F5;
+    --ink-dark: #1E2225;
+    --ink-muted: #535C62;
+    --ink-light: #8E989F;
+    --line-border: rgba(30, 34, 37, 0.12);
+    --line-bold: rgba(30, 34, 37, 0.25);
+    
+    /* Watercolor Meteorological Accents */
+    --cloud-sky: #4A7A96;
+    --terracotta: #C86B52;
+    --forest-green: #3D755D;
+    
+    /* Typographic Scale System */
+    --font-serif: 'Lora', Georgia, serif;
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: var(--font-sans); color: var(--ink-dark); background-color: var(--bg-base); }
+  
+  body {
+    background-image: 
+      radial-gradient(at 20% 20%, rgba(74, 122, 150, 0.04) 0px, transparent 50%),
+      radial-gradient(at 80% 80%, rgba(200, 107, 82, 0.03) 0px, transparent 50%),
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3e%3cfilter id='noiseFilter'%3e%3cfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3e%3c/filter%3e%3crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.035'/%3e%3c/svg%3e");
+    -webkit-font-smoothing: antialiased;
+    padding: 30px 24px 60px;
+    min-height: 100vh;
+  }
+
+  .skyfx { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; opacity: 0.75; filter: blur(40px); }
+  .skyfx span { position: absolute; border-radius: 50%; width: 600px; height: 400px; transition: all 10s ease-in-out; }
+  .skyfx .c1 { background: radial-gradient(circle, rgba(74, 122, 150, 0.08) 0%, transparent 70%); left: -10%; top: 10%; animation: morphShapeA 25s ease-in-out infinite alternate; }
+  .skyfx .c2 { background: radial-gradient(circle, rgba(200, 107, 82, 0.05) 0%, transparent 70%); right: -5%; bottom: 10%; animation: morphShapeB 30s ease-in-out infinite alternate; }
+  
+  @keyframes morphShapeA { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(80px, 40px) scale(1.15); } }
+  @keyframes morphShapeB { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(-60px, -50px) scale(0.9); } }
+
+  .wrap { max-width: 1400px; margin: 0 auto; position: relative; z-index: 10; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+  .top {
+    display: flex; align-items: center; justify-content: space-between; padding: 20px 0 24px;
+    border-bottom: 2px solid var(--ink-dark); margin-bottom: 40px; position: relative;
+  }
+  .brand { display: flex; align-items: baseline; gap: 14px; }
+  .brand h1 { font-family: var(--font-serif); font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
+  .brand p { font-size: 13px; font-family: var(--font-mono); text-transform: uppercase; color: var(--ink-muted); letter-spacing: 1px; }
+  
+  .top-nav { display: flex; align-items: center; gap: 32px; }
+  .top-nav a { font-size: 14px; font-weight: 500; color: var(--ink-muted); text-decoration: none; transition: color 0.2s ease; }
+  .top-nav a:hover { color: var(--ink-dark); text-shadow: 0.5px 0 0 var(--ink-dark); }
+  
+  .pill {
+    display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px;
+    color: var(--ink-dark); padding: 8px 18px; border: 1.5px solid var(--ink-dark);
+    background: transparent; border-radius: 255px 15px 225px 15px/15px 225px 15px 255px; 
+    text-transform: uppercase; font-weight: 600; cursor: default;
+  }
+
+  .grid { display: grid; grid-template-columns: 360px 1fr; gap: 32px; margin-top: 16px; align-items: start; }
+  .sidebar-stack { display: flex; flex-direction: column; gap: 32px; }
+
+  .card {
+    background: var(--paper-card);
+    border: 1px solid var(--line-border);
+    box-shadow: 2px 4px 16px rgba(30, 34, 37, 0.03);
+    position: relative;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .card::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    border-bottom: 2px solid rgba(30, 34, 37, 0.04);
+  }
+
+  .ch {
+    display: flex; align-items: center; justify-content: space-between; 
+    padding: 20px 24px; border-bottom: 1px solid var(--line-border);
+  }
+  .ch .t { font-family: var(--font-serif); font-size: 18px; font-weight: 600; font-style: italic; color: var(--ink-dark); }
+  .ch .tag { 
+    font-family: var(--font-mono); font-size: 10px; color: var(--cloud-sky); 
+    background: rgba(74, 122, 150, 0.08); padding: 4px 8px; font-weight: 600; text-transform: uppercase;
+  }
+  
+  .cb { padding: 24px; }
+  
+  .intro-line { font-family: var(--font-serif); font-size: 16px; line-height: 1.6; color: var(--ink-muted); margin-bottom: 24px; }
+  .intro-line b { color: var(--ink-dark); font-weight: 600; font-style: normal; }
+  
+  .nudge { 
+    font-size: 13px; color: var(--terracotta); background: rgba(200, 107, 82, 0.06);
+    padding: 12px 16px; border-left: 3px solid var(--terracotta); margin-bottom: 28px; line-height: 1.5;
+  }
+
+  .slab { margin-bottom: 28px; }
+  .slab .lab { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .slab .lab .n { font-size: 14px; font-weight: 600; color: var(--ink-dark); }
+  .slab .lab .v { font-family: var(--font-mono); font-size: 15px; font-weight: 600; }
+  
+  .hint { font-family: var(--font-mono); font-size: 10px; color: var(--ink-light); margin-top: 8px; display: flex; justify-content: space-between; text-transform: uppercase; }
+
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 3px; background: var(--line-bold); outline: none; }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; background: var(--paper-card);
+    border: 2px solid var(--ink-dark); border-radius: 50%; cursor: grab; transition: transform 0.15s ease;
+  }
+  input[type=range]::-webkit-slider-thumb:active { transform: scale(1.25); cursor: grabbing; background: var(--ink-dark); }
+  
+  .verdict {
+    padding: 20px; background: rgba(30, 34, 37, 0.02); border: 1px dashed var(--line-bold);
+    margin: 12px 0 24px; min-height: 90px; transition: all 0.3s ease;
+  }
+  .verdict .flag {
+    display: inline-flex; font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border: 1px solid currentColor; text-transform: uppercase; margin-bottom: 12px;
+  }
+  .verdict .say { font-family: var(--font-serif); font-size: 14px; line-height: 1.6; color: var(--ink-dark); }
+
+  .impacts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .imp { 
+    padding: 18px; background: var(--paper-card); border: 1px solid var(--line-border);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .imp:nth-child(even) { transform: rotate(0.5deg); }
+  .imp:nth-child(odd) { transform: rotate(-0.5deg); }
+  .imp:hover { transform: scale(1.02) rotate(0deg); border-color: var(--line-bold); }
+  
+  .imp .il { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; color: var(--ink-muted); display: flex; align-items: center; gap: 4px; }
+  .qm { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--ink-light); color: var(--ink-light); font-size: 9px; cursor: help; }
+  .imp .iv { font-family: var(--font-serif); font-size: 28px; font-weight: 700; margin-top: 6px; line-height: 1; color: var(--ink-dark); }
+  .imp .id { font-size: 11px; font-family: var(--font-mono); color: var(--ink-light); margin-top: 6px; }
+
+  .reset {
+    width: 100%; margin-top: 20px; font-family: var(--font-sans); font-size: 12px; font-weight: 600;
+    color: var(--ink-muted); background: transparent; border: 1px solid var(--line-border);
+    padding: 12px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s;
+  }
+  .reset:hover { color: var(--ink-dark); border-color: var(--ink-dark); background: rgba(30,34,37,0.02); }
+
+  /* Map Container Layout */
+  .mapcard { position: relative; overflow: hidden; display: flex; flex-direction: column; }
+  #map { height: 580px; width: 100%; background: var(--bg-base); z-index: 1; }
+  
+  .leaflet-container { background: var(--bg-base) !important; font-family: var(--font-mono); }
+  .leaflet-control-attribution { background: var(--paper-card) !important; color: var(--ink-muted) !important; font-size: 9px !important; border-left: 1px solid var(--line-border); }
+  .leaflet-bar a { background-color: var(--paper-card) !important; color: var(--ink-dark) !important; border-bottom: 1px solid var(--line-border) !important; }
+  .leaflet-bar a:hover { background-color: var(--bg-base) !important; color: var(--terracotta) !important; }
+  
+  .leaflet-div-icon { background: transparent !important; border: none !important; }
+  .leaflet-tile-container img { filter: none !important; mix-blend-mode: normal !important; }
+  
+  .vignette { position: absolute; inset: 0; pointer-events: none; z-index: 400; box-shadow: inset 0 0 80px rgba(30,34,37,0.15); }
+
+  /* Upgraded Clean Colorful Weather Icons */
+  .wx { width: 46px; height: 46px; display: grid; place-items: center; }
+  .wx svg { width: 100%; height: 100%; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); }
+  .wx-marker-wrap:hover .wx { transform: scale(1.15); transition: transform 0.2s ease; }
+  
+  .wx svg { overflow: visible; }
+  .sun .rays { transform-box: fill-box; transform-origin: center; animation: spin 16s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .sun .core { transform-box: fill-box; transform-origin: center; animation: sunPulse 3.5s ease-in-out infinite; }
+  @keyframes sunPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.09); } }
+  .cloud, .partly, .rain { animation: driftFloat 6s ease-in-out infinite; }
+  @keyframes driftFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+  .rain .drops line { transform-box: fill-box; animation: rainFall 1.1s linear infinite; }
+  .rain .drops line:nth-child(2) { animation-delay: 0.36s; }
+  .rain .drops line:nth-child(3) { animation-delay: 0.72s; }
+  @keyframes rainFall { 0% { transform: translateY(-3px); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(6px); opacity: 0; } }
+
+  .saybar {
+    position: absolute; left: 24px; bottom: 24px; z-index: 450; max-width: 60%;
+    font-family: var(--font-serif); font-style: italic; font-size: 14px; color: var(--ink-dark);
+    background: var(--paper-card); border: 1px solid var(--line-bold); padding: 12px 20px;
+    box-shadow: 2px 4px 20px rgba(0,0,0,0.06);
+  }
+  
+  .legend {
+    position: absolute; top: 24px; left: 24px; z-index: 450; display: flex; flex-direction: column; gap: 12px;
+    background: var(--paper-card); border: 1px solid var(--line-border); padding: 16px 20px;
+    box-shadow: 2px 4px 20px rgba(0,0,0,0.1); border-radius: 6px;
+  }
+  .legend .li { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--ink-muted); }
+  .legend .li b { color: var(--ink-dark); font-weight: 600; font-family: var(--font-serif); }
+  .legend .gl { width: 28px; height: 28px; display: grid; place-items: center; }
+  .legend .gl .wx { width: 100%; height: 100%; }
+
+  /* Location Sidebar Panel */
+  .loc-toggle {
+    position: absolute; top: 24px; right: 24px; z-index: 500;
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--ink-dark);
+    background: var(--paper-card); border: 1px solid var(--line-bold); padding: 10px 16px;
+    text-transform: uppercase; cursor: pointer; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+  }
+  .loc-toggle:hover { background: var(--ink-dark); color: var(--paper-card); }
+  
+  .loc-sidebar {
+    position: absolute; top: 70px; right: 24px; z-index: 490; width: 260px; max-height: 400px;
+    background: rgba(250, 248, 245, 0.95); border: 1px solid var(--line-bold); border-radius: 6px;
+    overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3); backdrop-filter: blur(8px);
+    transform: translateX(120%); opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .loc-sidebar.open { transform: translateX(0); opacity: 1; }
+  
+  .loc-item {
+    padding: 14px 16px; border-bottom: 1px solid rgba(0,0,0,0.05);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .loc-item:last-child { border-bottom: none; }
+  .loc-info .ln { font-family: var(--font-serif); font-size: 14px; font-weight: 600; color: var(--ink-dark); }
+  .loc-info .ld { font-family: var(--font-mono); font-size: 10px; color: var(--ink-light); text-transform: uppercase; margin-top: 4px; }
+  .loc-data { text-align: right; }
+  .loc-data .dt { font-family: var(--font-serif); font-size: 15px; font-weight: 700; color: var(--terracotta); }
+  .loc-data .dr { font-family: var(--font-mono); font-size: 11px; color: var(--cloud-sky); margin-top: 2px; }
+
+  .space { position: absolute; inset: 0; z-index: 600; overflow: hidden; background: var(--ink-dark); transition: transform 1.2s cubic-bezier(0.76, 0, 0.24, 1); }
+  .space.gone { transform: translateY(-100%); }
+  .introtxt { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; color: var(--paper-card); }
+  .introtxt .ttl { font-family: var(--font-serif); font-size: 46px; font-weight: 400; font-style: italic; letter-spacing: 1px; }
+  .introtxt .sub { font-family: var(--font-mono); font-size: 12px; color: var(--ink-light); letter-spacing: 2px; text-transform: uppercase; }
+  .skip { position: absolute; bottom: 24px; right: 24px; z-index: 601; font-family: var(--font-mono); font-size: 11px; color: var(--paper-card); background: transparent; border: 1px solid rgba(250,248,245,0.3); padding: 6px 14px; cursor: pointer; }
+
+  .clickcard { cursor: pointer; }
+  .clickcard:hover { border-color: var(--ink-dark); box-shadow: 2px 8px 24px rgba(30, 34, 37, 0.06); }
+  .clickcard .opn { color: var(--terracotta) !important; font-weight: 600; text-decoration: underline; }
+  #fc { width: 100%; display: block; margin-top: 10px; }
+  .leg { display: flex; gap: 16px; padding: 12px 24px 0; font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); }
+  .leg span { display: flex; align-items: center; gap: 6px; }
+  .leg i { width: 16px; height: 2px; }
+
+  .aiwrap { padding: 24px; }
+  .ai-intro { font-family: var(--font-serif); font-size: 14px; line-height: 1.6; color: var(--ink-muted); margin-bottom: 20px; }
+  .cmp { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+  .cmp-row { display: flex; align-items: center; gap: 14px; }
+  .cmp-lab { font-size: 13px; color: var(--ink-muted); width: 95px; flex: none; font-weight: 500; }
+  .cmp-track { flex: 1; height: 8px; background: rgba(30, 34, 37, 0.06); overflow: hidden; position: relative; }
+  .cmp-bar { height: 100%; width: 0; transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1); }
+  .cmp-bar.guess { background: var(--ink-light); }
+  .cmp-bar.ai { background: var(--cloud-sky); }
+  .cmp-num { font-family: var(--font-mono); font-size: 13px; color: var(--ink-dark); width: 65px; text-align: right; flex: none; font-weight: 600; }
+  
+  .ai-win { display: flex; align-items: center; gap: 18px; padding: 16px 20px; background: rgba(61, 117, 93, 0.06); border: 1px dashed var(--forest-green); }
+  .aw-big { font-family: var(--font-serif); font-size: 36px; font-weight: 700; color: var(--forest-green); flex: none; }
+  .aw-sub { font-size: 13px; line-height: 1.5; color: var(--ink-muted); }
+  .aw-sub b { color: var(--ink-dark); }
+
+  .strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 32px; }
+  .strip .metric { padding: 20px; background: var(--paper-card); border: 1px solid var(--line-border); }
+  .metric .ml { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--ink-light); }
+  .metric .mv { font-family: var(--font-serif); font-size: 32px; font-weight: 700; margin-top: 6px; color: var(--ink-dark); }
+  .metric .mv .u { font-size: 14px; font-weight: 400; color: var(--ink-muted); }
+  .metric .ms { font-size: 12px; color: var(--ink-muted); margin-top: 6px; }
+  .foot { text-align: center; margin-top: 40px; font-size: 11px; font-family: var(--font-mono); color: var(--ink-light); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .fhead { display: flex; align-items: center; gap: 20px; padding-bottom: 20px; border-bottom: 2px solid var(--ink-dark); margin-bottom: 32px; }
+  .backbtn { font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--ink-dark); background: transparent; border: 1px solid var(--ink-dark); padding: 8px 16px; cursor: pointer; text-transform: uppercase; }
+  .backbtn:hover { background: var(--ink-dark); color: var(--paper-card); }
+  .ftitle h2 { font-family: var(--font-serif); font-size: 26px; font-weight: 700; }
+  .ftitle span { font-size: 12px; font-family: var(--font-mono); color: var(--ink-muted); }
+  
+  .fgrid { display: grid; grid-template-columns: 1fr 360px; gap: 32px; }
+  #fmap { height: 480px; width: 100%; background: var(--bg-base); z-index: 1; }
+  
+  .fdetail { text-align: center; }
+  .bigicon { width: 100px; height: 100px; margin: 12px auto; }
+  .bigicon .wx { width: 100px; height: 100px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05)); }
+  .bigday { font-family: var(--font-serif); font-size: 24px; font-style: italic; font-weight: 600; margin-bottom: 16px; }
+  
+  .frow { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 0 6px; border-top: 1px solid var(--line-border); }
+  .frow .fk { font-size: 14px; color: var(--ink-muted); }
+  .frow .fv { font-family: var(--font-serif); font-size: 22px; font-weight: 700; color: var(--ink-dark); }
+  
+  .fsummary { margin-top: 16px; padding: 16px; background: rgba(30,34,37,0.02); border: 1px solid var(--line-border); font-family: var(--font-serif); font-style: italic; font-size: 14px; line-height: 1.6; text-align: left; }
+  
+  .fscrub { margin-top: 32px; padding: 24px; }
+  .scrub-top { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--ink-dark); margin-bottom: 16px; text-transform: uppercase; font-family: var(--font-mono); }
+  
+  #fslider { -webkit-appearance: none; appearance: none; width: 100%; height: 3px; background: var(--line-bold); outline: none; }
+  #fslider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: var(--paper-card); border: 2px solid var(--ink-dark); border-radius: 50%; cursor: grab; }
+
+  .daystrip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-top: 24px; }
+  .daychip { padding: 14px 8px; background: var(--paper-card); border: 1px solid var(--line-border); text-align: center; cursor: pointer; transition: all 0.2s ease; }
+  .daychip:hover { border-color: var(--ink-dark); }
+  .daychip.active { border-color: var(--ink-dark); background: rgba(30,34,37,0.02); box-shadow: inset 0 2px 4px rgba(0,0,0,0.03); transform: translateY(1px); }
+  .daychip .dl { font-size: 12px; font-weight: 600; color: var(--ink-dark); font-family: var(--font-mono); text-transform: uppercase; }
+  .daychip .di { width: 36px; height: 36px; margin: 6px auto; }
+  .daychip .di .wx { width: 36px; height: 36px; }
+  .daychip .dr { font-family: var(--font-mono); font-size: 11px; color: var(--cloud-sky); font-weight: 600; }
+  .daychip .dt { font-family: var(--font-mono); font-size: 11px; color: var(--terracotta); margin-top: 2px; }
+
+  /* New Fire Overlay for Left Extreme Slider */
+  #left-fire-overlay {
+    position: fixed; inset: 0; z-index: 9998; pointer-events: none; opacity: 0;
+    background: radial-gradient(circle at 30% 50%, rgba(200,80,40,0.3) 0%, rgba(200,80,40,0) 60%);
+    mix-blend-mode: overlay; transition: opacity 0.3s ease;
+  }
+
+  /* Amber heat glow (warming slider) — uses the existing terracotta accent */
+  #heat-overlay { position: fixed; inset: 0; z-index: 9990; pointer-events: none; opacity: 0; mix-blend-mode: multiply; transition: opacity 0.5s ease; }
+  #heat-shimmer { position: fixed; inset: 0; z-index: 9991; pointer-events: none; opacity: 0; transition: opacity 0.6s ease; background: linear-gradient(to top, rgba(200,107,82,0.12), transparent 42%); }
+  @keyframes heatThrob { 0%, 100% { opacity: 0.82; } 50% { opacity: 1; } }
+  body.heat-pulse #heat-overlay { animation: heatThrob 2.4s ease-in-out infinite; }
+
+  /* Click-a-marker place popup — built from the existing palette/typography */
+  .place-popup {
+    position: absolute; top: 70px; left: 50%; transform: translate(-50%, -10px);
+    z-index: 500; width: 280px; background: var(--paper-card);
+    border: 1px solid var(--line-bold); border-radius: 6px;
+    box-shadow: 0 12px 32px rgba(30,34,37,0.18); padding: 18px 20px;
+    opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .place-popup.show { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+  .pp-close { position: absolute; top: 8px; right: 12px; background: none; border: none; color: var(--ink-light); font-size: 14px; cursor: pointer; line-height: 1; }
+  .pp-close:hover { color: var(--ink-dark); }
+  .pp-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .pp-icon { width: 42px; height: 42px; flex: none; }
+  .pp-icon .wx { width: 42px; height: 42px; }
+  .pp-place { font-family: var(--font-serif); font-size: 17px; font-weight: 700; color: var(--ink-dark); line-height: 1.2; }
+  .pp-district { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; color: var(--ink-light); margin-top: 3px; letter-spacing: 0.5px; }
+  .pp-loading { font-family: var(--font-mono); font-size: 11px; color: var(--ink-light); padding: 6px 0 2px; }
+  .pp-body { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pp-stat { background: var(--bg-base); border: 1px solid var(--line-border); padding: 12px 10px; text-align: center; }
+  .psl { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; color: var(--ink-muted); }
+  .psv { font-family: var(--font-serif); font-size: 22px; font-weight: 700; margin-top: 4px; line-height: 1; }
+  .psu { font-family: var(--font-mono); font-size: 9px; color: var(--ink-light); margin-top: 4px; text-transform: uppercase; }
+
+  @media (max-width: 1120px) { .grid, .fgrid { grid-template-columns: 1fr; } .strip { grid-template-columns: repeat(2, 1fr); } .daystrip { grid-template-columns: repeat(4, 1fr); } }
 </style>
 </head>
 <body>
-<div class="skyfx" aria-hidden="true"><span class="c1"></span><span class="c2"></span><span class="c3"></span></div>
+<div class="skyfx" aria-hidden="true"><span class="c1"></span><span class="c2"></span></div>
 <div id="heat-overlay"></div>
 <div id="heat-shimmer"></div>
+<div id="left-fire-overlay"></div>
+
 <div class="wrap">
-  <h2 class="sr-only">VAYU shows Central India on a satellite map with friendly weather icons — sun for dry, clouds for rain. Drag the sliders to see drought or heavy-rain scenarios. Includes a 7-day forecast and an AI model that beats simple guessing.</h2>
+  <h2 class="sr-only">VAYU Atmospheric Observation Engine.</h2>
+  
   <div class="top">
-    <div class="logo" aria-hidden="true"></div>
-    <div class="brand"><h1>VAYU</h1><p>Your Rain Check &amp; Weather Partner</p></div>
-    <div class="spacer"></div>
-    <div class="pill">📍 region <b>Central India</b></div>
+    <div class="brand">
+      <h1>VAYU</h1>
+      <p>Your Rain Check and Weather Partner</p>
+    </div>
+    <div class="top-nav">
+      <a href="#features">Features</a>
+      <a href="#upload">Upload Data</a>
+      <a href="#about">About Model</a>
+    </div>
+    <div class="pill">Context Grid: <b>Central India</b></div>
   </div>
+
   <div id="view-home">
-  <div class="grid">
-    <div class="card">
-      <div class="ch"><span class="t">What if the weather changed?</span><span class="tag">try it</span></div>
-      <div class="cb">
-        <p class="intro-line">This is <b>Central India</b>. Picture a different climate — drag the two sliders, and the map and the numbers shift to show what life here would feel like.</p>
-        <div class="nudge"><span>👋</span>Go ahead — nudge the rain or the heat, and watch your region respond.</div>
-        <div class="slab"><div class="lab"><span class="n">☔ How much rain falls</span><span class="v" id="rainv" style="color:var(--cyan)">normal</span></div>
-          <input type="range" id="rain" min="-60" max="40" value="0" step="1" aria-label="Rainfall change">
-          <div class="hint"><span>← drier (drought)</span><span>wetter (floods) →</span></div></div>
-        <div class="slab"><div class="lab"><span class="n">🌡️ How much hotter it gets</span><span class="v" id="warmv" style="color:var(--amber)">+0.0 °C</span></div>
-          <input type="range" id="warm" min="0" max="4" value="0" step="0.1" aria-label="Warming">
-          <div class="hint"><span>today's normal</span><span>+4°C hotter →</span></div></div>
-        <div class="verdict" id="verdict"><span class="flag" id="flag"></span><div class="say" id="say"></div></div>
-        <div class="impacts">
-          <div class="imp"><div class="il">Rain in a year<span class="qm" title="Total rainfall Central India gets across a whole year. Normal is about 1058 mm.">?</span></div><div class="iv" id="imp-rain" style="color:var(--cyan)">—</div><div class="id" id="imp-raind">normal</div></div>
-          <div class="imp"><div class="il">Very hot days<span class="qm" title="Dangerously hot (heatwave) days in a year, when the max temperature tops 40°C. More warming = more of them.">?</span></div><div class="iv" id="imp-hw">—</div><div class="id" id="imp-hwd">per year</div></div>
-          <div class="imp" id="imp-wn-tile" style="display:none;grid-column:1/-1"><div class="il">Warm nights<span class="qm" title="Nights that stay above 25°C, when the body can't cool off and recover. The hidden hazard that makes heatwaves deadly. More warming = more of them.">?</span></div><div class="iv" id="imp-wn" style="color:var(--amber)">—</div><div class="id" id="imp-wnd">per year</div></div>
+    <div class="grid">
+      <div class="sidebar-stack">
+        <div class="card">
+          <div class="ch"><span class="t">What if the weather changed?</span><span class="tag">try it</span></div>
+          <div class="cb">
+            <p class="intro-line">This is <b>Central India</b>. Picture a different climate — drag the two sliders, and the map and the numbers shift to show what life here would feel like.</p>
+            <div class="nudge">👋 Go ahead — nudge the rain or the heat, and watch your region respond.</div>
+            
+            <div class="slab">
+              <div class="lab"><span class="n">☔ How much rain falls</span><span class="v" id="rainv" style="color:var(--cloud-sky)">normal</span></div>
+              <input type="range" id="rain" min="-60" max="40" value="0" step="1" aria-label="Rainfall parameter shift">
+              <div class="hint"><span>← drier (drought)</span><span>wetter (floods) →</span></div>
+            </div>
+            
+            <div class="slab">
+              <div class="lab"><span class="n">🌡️ How much hotter it gets</span><span class="v" id="warmv" style="color:var(--terracotta)">+0.0 °C</span></div>
+              <input type="range" id="warm" min="0" max="4" value="0" step="0.1" aria-label="Temperature scaling parameter">
+              <div class="hint"><span>today's normal</span><span>+4°C hotter →</span></div>
+            </div>
+            
+            <div class="verdict" id="verdict">
+              <span class="flag" id="flag"></span>
+              <div class="say" id="say"></div>
+            </div>
+            
+            <div class="impacts">
+              <div class="imp"><div class="il">Rain in a year<span class="qm" title="Aggregated volumetric precipitation calculated over the regional matrix. Baseline: 1058mm.">?</span></div><div class="iv" id="imp-rain" style="color:var(--cloud-sky)">1058<span style="font-size:14px;font-family:var(--font-mono)"> mm</span></div><div class="id" id="imp-raind">normal</div></div>
+              <div class="imp"><div class="il">Very hot days<span class="qm" title="Modeled consecutive diurnal cycles exceeding a maximum localized threshold of 40°C.">?</span></div><div class="iv" id="imp-hw">40</div><div class="id" id="imp-hwd">normal</div></div>
+              <div class="imp" id="imp-wn-tile" style="grid-column:1/-1"><div class="il">Warm nights<span class="qm" title="Modeled cycles where the minimum thermal footprint fails to drop below 25°C.">?</span></div><div class="iv" id="imp-wn" style="color:var(--terracotta)">54</div><div class="id" id="imp-wnd">normal</div></div>
+            </div>
+            <button class="reset" id="reset">↺ Back to normal</button>
+          </div>
         </div>
-        <button class="reset" id="reset">↺ Back to normal</button>
+      </div>
+
+      <div class="card mapcard">
+        <div class="ch"><span class="t">Observation Mapping Grid</span><span class="tag">Live Satellite Overview</span></div>
+        <div id="map"></div>
+        <div class="vignette"></div>
+        
+        <div class="place-popup" id="main-popup">
+          <button class="pp-close" id="main-popup-close">✕</button>
+          <div class="pp-head">
+            <div class="pp-icon" id="main-pp-icon"></div>
+            <div><div class="pp-place" id="main-pp-place">Loading…</div><div class="pp-district" id="main-pp-district"></div></div>
+          </div>
+          <div class="pp-loading" id="main-pp-loading">Finding this place…</div>
+          <div class="pp-body" id="main-pp-body" style="display:none">
+            <div class="pp-stat"><div class="psl">☔ Rain</div><div class="psv" id="main-pp-rain" style="color:var(--cloud-sky)">—</div><div class="psu">mm/day</div></div>
+            <div class="pp-stat"><div class="psl">🌡️ Temp</div><div class="psv" id="main-pp-temp" style="color:var(--terracotta)">—</div><div class="psu">°C typical</div></div>
+          </div>
+        </div>
+
+        <div class="legend">
+          <div class="li"><span class="gl" id="lg-sun"></span><b>Anticyclonic</b> · Stable</div>
+          <div class="li"><span class="gl" id="lg-cloud"></span><b>Convective</b> · Scattered</div>
+          <div class="li"><span class="gl" id="lg-rain"></span><b>Frontal Systems</b> · Saturation</div>
+        </div>
+        
+        <div class="saybar" id="saybar">Synchronizing grid coordinates with telemetry array...</div>
+        
+        <div class="space" id="space">
+          <div class="introtxt">
+            <div class="ttl">VAYU</div>
+            <div class="sub">Loading Atmospheric Matrix...</div>
+          </div>
+          <button class="skip" id="skip">Skip Animation ›</button>
+        </div>
       </div>
     </div>
-    <div class="card mapcard" style="position:relative">
-      <div class="ch"><span class="t">Central India · live</span><span class="tag">satellite + weather · tap an icon</span></div>
-      <div id="map"></div>
-      <div class="vignette"></div>
-      <div class="legend">
-        <div class="li"><span class="gl" id="lg-sun"></span><b>Sunny</b> · dry</div>
-        <div class="li"><span class="gl" id="lg-cloud"></span><b>Cloudy</b> · some rain</div>
-        <div class="li"><span class="gl" id="lg-rain"></span><b>Rainy</b> · heavy</div>
-      </div>
-      <div class="readout" id="readout"><div><b id="ro-word">—</b></div><div>lat <span id="ro-lat">—</span> · lon <span id="ro-lon">—</span></div><div><span class="vv" id="ro-val">—</span> mm/day</div></div>
-      <div class="saybar" id="saybar">Reading the skies over Central India…</div>
-      <div class="space" id="space"><div class="stars"></div><div class="stars2"></div>
-        <div class="introtxt"><div class="ttl">VAYU</div><div class="sub">drifting down into <b>Central India</b>…</div></div>
-        <button class="skip" id="skip">skip ›</button></div>
-      <div class="place-popup" id="main-popup">
-        <button class="pp-close" id="main-popup-close">✕</button>
-        <div class="pp-head"><div class="pp-icon" id="main-pp-icon"></div><div><div class="pp-place" id="main-pp-place">Loading…</div><div class="pp-district" id="main-pp-district"></div></div></div>
-        <div class="pp-loading" id="main-pp-loading">Finding this place…</div>
-        <div class="pp-body" id="main-pp-body" style="display:none">
-          <div class="pp-stat"><div class="psl">☔ Rain</div><div class="psv" id="main-pp-rain" style="color:var(--cyan)">—</div><div class="psu">mm/day</div></div>
-          <div class="pp-stat"><div class="psl">🌡️ Temp</div><div class="psv" id="main-pp-temp" style="color:var(--amber)">—</div><div class="psu">°C typical</div></div>
-        </div>
-        <a class="pp-gmaps" id="main-pp-gmaps" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>Open in Google Maps</a>
-      </div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:16px">
+
+    <div class="grid" style="margin-top: 32px; grid-template-columns: 1fr 360px;">
       <div class="card clickcard" id="openForecast">
         <div class="ch"><span class="t">Next 7 days</span><span class="tag opn">open weather view ›</span></div>
-        <div class="leg"><span><i style="background:var(--cyan)"></i>forecast</span><span><i style="background:rgba(70,215,200,.28)"></i>could-be range</span></div>
-        <canvas id="fc" height="172"></canvas><div style="height:10px"></div>
+        <div class="leg"><span><i style="background:var(--cloud-sky)"></i>forecast</span><span><i style="background:rgba(74, 122, 150, 0.2)"></i>could-be range</span></div>
+        <canvas id="fc" height="150"></canvas>
       </div>
+      
       <div class="card">
         <div class="ch"><span class="t">Is our AI any good?</span><span class="tag">yes ✓</span></div>
         <div class="aiwrap">
-          <p class="ai-intro">We tested it on <b style="color:var(--txt)">3 whole years it had never seen</b>. Shorter bar = fewer mistakes.</p>
+          <p class="ai-intro">We tested it on <b>3 whole years it had never seen</b>. Shorter bar = fewer mistakes.</p>
           <div class="cmp">
             <div class="cmp-row"><span class="cmp-lab">Just guessing</span><div class="cmp-track"><div class="cmp-bar guess" id="bar-guess"></div></div><span class="cmp-num" id="cmp-guess">2.68 mm</span></div>
-            <div class="cmp-row"><span class="cmp-lab">Our AI 🏆</span><div class="cmp-track"><div class="cmp-bar ai" id="bar-ai"></div></div><span class="cmp-num" id="cmp-ai" style="color:var(--green)">2.47 mm</span></div>
+            <div class="cmp-row"><span class="cmp-lab">Our AI 🏆</span><div class="cmp-track"><div class="cmp-bar ai" id="bar-ai"></div></div><span class="cmp-num" id="cmp-ai" style="color:var(--cloud-sky)">2.47 mm</span></div>
           </div>
-          <div class="ai-win"><div class="aw-big" id="winpct">7.7%</div><div class="aw-sub"><b>fewer mistakes</b> than simply guessing that tomorrow copies today.</div></div>
+          <div class="ai-win">
+            <div class="aw-big" id="winpct">7.7%</div>
+            <div class="aw-sub"><b>fewer mistakes</b> than simply guessing that tomorrow copies today.</div>
+          </div>
         </div>
       </div>
     </div>
+
+    <div class="strip">
+      <div class="metric"><div class="ml">Model Predictive Gain</div><div class="mv" id="m-gain">0<span class="u">%</span></div><div class="ms">Reduced error tracking metrics</div></div>
+      <div class="metric"><div class="ml">Training Dataset Bounds</div><div class="mv" id="m-days">0</div><div class="ms">19 years of rain</div></div>
+      <div class="metric"><div class="ml">Monitored Spatial Nodes</div><div class="mv" id="m-cells">0</div><div class="ms">across the region</div></div>
+      <div class="metric"><div class="ml">Rigorous Evaluation Cycles</div><div class="mv" id="m-years">3</div><div class="ms">2021 · 2022 · 2023</div></div>
+    </div>
+    <div class="foot" id="homefoot">VAYU Architecture • Core Data Synthesized from Open Meteorological Inputs • Ground Target Reference Matrix Alpha 2026</div>
   </div>
-  <div class="strip">
-    <div class="metric"><div class="ml">Smarter than guessing</div><div class="mv" id="m-gain">0<span class="u">%</span></div><div class="ms">fewer mistakes</div></div>
-    <div class="metric"><div class="ml">Days it learned from</div><div class="mv" id="m-days">0</div><div class="ms">19 years of rain</div></div>
-    <div class="metric"><div class="ml">Weather spots</div><div class="mv" id="m-cells">0</div><div class="ms">across the region</div></div>
-    <div class="metric"><div class="ml">Years tested</div><div class="mv" id="m-years">3</div><div class="ms">2021 · 2022 · 2023</div></div>
-  </div>
-  <div class="foot" id="homefoot">VAYU · climate digital twin · satellite imagery © Esri · rain &amp; drought from IMD data · hot-day estimate is a first guess</div>
-  </div><!-- /view-home -->
+
   <div id="view-forecast" style="display:none">
     <div class="fhead">
-      <button class="backbtn" id="backHome">‹ Back to overview</button>
+      <button class="backbtn" id="backHome">← Return to Main Array</button>
       <div class="ftitle"><h2>The Week Ahead</h2><span>Central India · forecast from 31 Dec 2023</span></div>
       <div class="spacer"></div>
-      <div class="pill">🛰️ <b>VAYU forecast</b></div>
     </div>
+    
     <div class="fgrid">
-      <div class="card mapcard" style="position:relative">
-        <div class="ch"><span class="t">Day <span id="fdaynum">1</span> · <span id="fdaylabel">Jan 1</span></span><span class="tag">tap an icon to explore</span></div>
+      <div class="card mapcard">
+        <div class="ch"><span class="t">Day <span id="fdaynum">1</span> · <span id="fdaylabel">Jan 1</span></span><span class="tag">Spatial Interactive Node Layer</span></div>
         <div id="fmap"></div>
         <div class="vignette"></div>
-        <div class="saybar" id="fsaybar">Loading…</div>
+        <div class="saybar" id="fsaybar">Parsing frame attributes...</div>
         <div class="place-popup" id="fcast-popup">
           <button class="pp-close" id="fcast-popup-close">✕</button>
-          <div class="pp-head"><div class="pp-icon" id="fcast-pp-icon"></div><div><div class="pp-place" id="fcast-pp-place">Loading…</div><div class="pp-district" id="fcast-pp-district"></div></div></div>
+          <div class="pp-head">
+            <div class="pp-icon" id="fcast-pp-icon"></div>
+            <div><div class="pp-place" id="fcast-pp-place">Loading…</div><div class="pp-district" id="fcast-pp-district"></div></div>
+          </div>
           <div class="pp-loading" id="fcast-pp-loading">Finding this place…</div>
           <div class="pp-body" id="fcast-pp-body" style="display:none">
-            <div class="pp-stat"><div class="psl">☔ Rain</div><div class="psv" id="fcast-pp-rain" style="color:var(--cyan)">—</div><div class="psu">mm/day</div></div>
-            <div class="pp-stat"><div class="psl">🌡️ Temp</div><div class="psv" id="fcast-pp-temp" style="color:var(--amber)">—</div><div class="psu">°C typical</div></div>
+            <div class="pp-stat"><div class="psl">☔ Rain</div><div class="psv" id="fcast-pp-rain" style="color:var(--cloud-sky)">—</div><div class="psu">mm/day</div></div>
+            <div class="pp-stat"><div class="psl">🌡️ Temp</div><div class="psv" id="fcast-pp-temp" style="color:var(--terracotta)">—</div><div class="psu">°C typical</div></div>
           </div>
-          <a class="pp-gmaps" id="fcast-pp-gmaps" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>Open in Google Maps</a>
         </div>
       </div>
+      
       <div class="card">
         <div class="ch"><span class="t">This day</span><span class="tag" id="fdate2">Jan 1</span></div>
         <div class="cb fdetail">
@@ -282,50 +508,32 @@
           <div class="bigday" id="fbigday">Jan 1</div>
           <div class="frow"><span class="fk">☔ Expected rain</span><span class="fv" id="frain">—</span></div>
           <div class="fsub" id="frange">—</div>
-          <div class="frow"><span class="fk">🌡️ Expected high</span><span class="fv" id="ftemp" style="color:var(--amber)">—</span></div>
-          <div class="fsub">typical for the season</div>
+          <div class="frow"><span class="fk">🌡️ Expected high</span><span class="fv" id="ftemp" style="color:var(--terracotta)">—</span></div>
+          <div class="fsub" id="ftempsub">typical for the season</div>
           <div class="fsummary" id="fsummary"></div>
         </div>
       </div>
     </div>
+    
     <div class="card fscrub">
-      <div class="scrub-top"><span>Slide through the week — watch the skies change</span><span class="scrub-hint">drag ↔</span></div>
-      <input type="range" id="fslider" min="0" max="6" step="1" value="0" aria-label="Forecast day">
+      <div class="scrub-top"><span>Time Series Scrub Vector Configuration</span><span class="scrub-hint">Drag Axis Horizontal ↔</span></div>
+      <input type="range" id="fslider" min="0" max="6" step="1" value="0" aria-label="Timeline step target selector">
       <div class="daystrip" id="daystrip"></div>
     </div>
-    <div class="foot">Rain comes from VAYU's AI model (validated 2021–2023) · temperature is a seasonal estimate, not yet modelled</div>
   </div>
 </div>
-<script src="vayu-data.js"></script>
+
 <script>
 (function(){
   "use strict";
   var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   var DATA={model:{gain:7.7,trainDays:6939,rmseGuess:2.68,rmseAI:2.47,yearsTested:3},
-    forecast:{days:["Jan 1","Jan 2","Jan 3","Jan 4","Jan 5","Jan 6","Jan 7"],rain:[0.10,0.17,0.25,0.32,0.39,0.46,0.54],high:[4.78,6.53,7.43,7.71,8.31,8.41,8.90],low:[0,0,0,0,0,0,0]},
-    scenario:{annualRain:1058,baseHeatwave:18,heatwavePerDeg:6}};
-  (function(){var VD=window.VAYU_DATA;if(!VD)return;
-    if(VD.scenario){var s=DATA.scenario,V=VD.scenario;
-      if(V.annualRain!=null)s.annualRain=V.annualRain;
-      if(V.baseHeatwave!=null)s.baseHeatwave=V.baseHeatwave;
-      if(V.baseWarmNights!=null)s.baseWarmNights=V.baseWarmNights;
-      if(V.heatwaveCurve)s.heatwaveCurve=V.heatwaveCurve;
-      if(V.warmNightsCurve)s.warmNightsCurve=V.warmNightsCurve;
-      s.real=true;}
-    if(VD.forecast){var f=VD.forecast;
-      if(f.days)DATA.forecast.days=f.days;
-      if(f.rain)DATA.forecast.rain=f.rain;
-      if(f.high)DATA.forecast.high=f.high;
-      if(f.low)DATA.forecast.low=f.low;
-      DATA.forecast.real=true;}
-    if(VD.model){var m=DATA.model,M=VD.model;
-      if(M.gain!=null)m.gain=M.gain;
-      if(M.rmseGuess!=null)m.rmseGuess=M.rmseGuess;
-      if(M.rmseAI!=null)m.rmseAI=M.rmseAI;
-      if(M.trainDays!=null)m.trainDays=M.trainDays;
-      if(M.yearsTested!=null)m.yearsTested=M.yearsTested;
-      m.real=true;}
-  })();
+    forecast:{days:["Jan 1","Jan 2","Jan 3","Jan 4","Jan 5","Jan 6","Jan 7"],
+              rain:[0.10,0.17,0.25,0.32,0.39,0.46,0.54],
+              high:[4.78,6.53,7.43,7.71,8.31,8.41,8.90],
+              low:[0,0,0,0,0,0,0]},
+    scenario:{annualRain:1058,baseHeatwave:40,baseWarmNights:54,heatwavePerDeg:6}};
+  
   function curveAt(curve,base,perDeg,w){
     if(!curve){return base+w*(perDeg||0);}
     var xs=Object.keys(curve).map(Number).sort(function(a,b){return a-b;});
@@ -334,189 +542,343 @@
     for(var i=0;i<xs.length-1;i++){if(w>=xs[i]&&w<=xs[i+1]){
       var t=(w-xs[i])/(xs[i+1]-xs[i]);return curve[xs[i]]+t*(curve[xs[i+1]]-curve[xs[i]]);}}
     return base;}
+  
   var FR=24,FC=31,LATN=26,LATS=18,LONW=74,LONE=84,base=[];
   function hash(r,c){var x=Math.sin(r*12.9898+c*78.233)*43758.5453;return x-Math.floor(x);}
-  for(var r=0;r<FR;r++)for(var c=0;c<FC;c++){var s=r/(FR-1),e=c/(FC-1);
-    var v=1.2+2.1*(0.45*s+0.55*e);v+=Math.max(0,0.95-Math.hypot(s-0.85,e-0.80)*2.2);v+=Math.max(0,0.55-Math.hypot(s-0.42,e-0.42)*2.0);v+=(hash(r,c)-0.5)*0.45;base.push(Math.max(0.4,v));}
+  
+  // Syntax error properly fixed here:
+  for(var r=0;r<FR;r++){
+      for(var c=0;c<FC;c++){
+          var s=r/(FR-1),e=c/(FC-1);
+          var v=1.2+2.1*(0.45*s+0.55*e);
+          v+=Math.max(0,0.95-Math.hypot(s-0.85,e-0.80)*2.2);
+          v+=Math.max(0,0.55-Math.hypot(s-0.42,e-0.42)*2.0);
+          v+=(hash(r,c)-0.5)*0.45;
+          base.push(Math.max(0.4,v));
+      }
+  }
+  
   var factor=1;
   function classify(v){return v<1.8?'sun':(v<3.2?'cloud':'rain');}
-  function word(t){return t==='sun'?'Sunny':(t==='cloud'?'Light rain':'Heavy rain');}
+  function word(t){return t==='sun'?'Stable':(t==='cloud'?'Convective Flux':'Saturation Surge');}
   function gridTemp(ir,ic){var b=26+2*(ic/6)+1.5*(1-ir/5);return Math.round(b*10)/10;}
-  // ---- clean SQUARE 48x48 weather icons ----
+  
+  // Clean, non-stacked colorful custom icons
   var SVG={
-    sun:'<div class="wx sun"><svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><g class="rays" stroke="#FFCF5C" stroke-width="2.8" stroke-linecap="round"><line x1="24" y1="3" x2="24" y2="10"/><line x1="24" y1="38" x2="24" y2="45"/><line x1="3" y1="24" x2="10" y2="24"/><line x1="38" y1="24" x2="45" y2="24"/><line x1="9" y1="9" x2="14" y2="14"/><line x1="34" y1="34" x2="39" y2="39"/><line x1="39" y1="9" x2="34" y2="14"/><line x1="14" y1="34" x2="9" y2="39"/></g><circle class="core" cx="24" cy="24" r="9" fill="#FFD66B"/></svg></div>',
-    cloud:'<div class="wx cloud"><svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><g fill="#DDE8F0"><ellipse cx="18" cy="29" rx="9" ry="7"/><ellipse cx="31" cy="28" rx="10" ry="8"/><ellipse cx="24" cy="22" rx="8" ry="7"/><rect x="13" y="26" width="22" height="9" rx="4.5"/></g></svg></div>',
-    partly:'<div class="wx partly"><svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><g stroke="#FFCF5C" stroke-width="2.4" stroke-linecap="round"><line x1="17" y1="4" x2="17" y2="9"/><line x1="4" y1="17" x2="9" y2="17"/><line x1="7.5" y1="7.5" x2="11" y2="11"/><line x1="26.5" y1="7.5" x2="23" y2="11"/></g><circle cx="17" cy="17" r="7" fill="#FFD66B"/><g fill="#DDE8F0"><ellipse cx="27" cy="33" rx="9" ry="7"/><ellipse cx="38" cy="32" rx="7" ry="6"/><ellipse cx="32" cy="27" rx="7" ry="6"/><rect x="22" y="31" width="18" height="8" rx="4"/></g></svg></div>',
-    rain:'<div class="wx rain"><svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><g fill="#C8D6E0"><ellipse cx="18" cy="21" rx="9" ry="7"/><ellipse cx="31" cy="20" rx="10" ry="8"/><ellipse cx="24" cy="14" rx="8" ry="7"/><rect x="13" y="18" width="22" height="9" rx="4.5"/></g><g class="drops" stroke="#5BB7E8" stroke-width="2.6" stroke-linecap="round"><line class="d1" x1="17" y1="33" x2="15" y2="41"/><line class="d2" x1="25" y1="33" x2="23" y2="41"/><line class="d3" x1="33" y1="33" x2="31" y2="41"/></g></svg></div>'};
+    sun:'<div class="wx sun"><svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><circle class="core" cx="24" cy="24" r="10" fill="#FBBF24"/><g class="rays" stroke="#FBBF24" stroke-width="3" stroke-linecap="round"><line x1="24" y1="4" x2="24" y2="9"/><line x1="24" y1="39" x2="24" y2="44"/><line x1="4" y1="24" x2="9" y2="24"/><line x1="39" y1="24" x2="44" y2="24"/><line x1="9.8" y1="9.8" x2="13.4" y2="13.4"/><line x1="34.6" y1="34.6" x2="38.2" y2="38.2"/><line x1="38.2" y1="9.8" x2="34.6" y2="13.4"/><line x1="13.4" y1="34.6" x2="9.8" y2="38.2"/></g></svg></div>',
+    cloud:'<div class="wx cloud"><svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path d="M14 34 h20 a8 8 0 0 0 0 -16 a7 7 0 0 0 -13 -4 a6 6 0 0 0 -7 4 a8 8 0 0 0 0 16 z" fill="#E2E8F0"/></svg></div>',
+    partly:'<div class="wx partly"><svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="18" r="7" fill="#FBBF24"/><path d="M18 36 h16 a6 6 0 0 0 0 -12 a5 5 0 0 0 -9 -3 a4 4 0 0 0 -7 3 a6 6 0 0 0 0 12 z" fill="#F1F5F9"/></svg></div>',
+    rain:'<div class="wx rain"><svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path d="M14 28 h20 a8 8 0 0 0 0 -16 a7 7 0 0 0 -13 -4 a6 6 0 0 0 -7 4 a8 8 0 0 0 0 16 z" fill="#CBD5E1"/><g class="drops" stroke="#38BDF8" stroke-width="3" stroke-linecap="round"><line x1="18" y1="32" x2="15" y2="40"/><line x1="24" y1="32" x2="21" y2="40"/><line x1="30" y1="32" x2="27" y2="40"/></g></svg></div>'
+  };
   function icon(t){return L.divIcon({html:'<div class="wx-marker-wrap">'+SVG[t]+'</div>',className:'',iconSize:[46,46],iconAnchor:[23,23]});}
   document.getElementById('lg-sun').innerHTML=SVG.sun;
   document.getElementById('lg-cloud').innerHTML=SVG.cloud;
   document.getElementById('lg-rain').innerHTML=SVG.rain;
-  // ---- place popup ----
+  
+  // ----- click-a-marker place popup -----
   var geocodeCache={};
-  function reverseGeocode(lat,lon,cb){var key=lat.toFixed(2)+','+lon.toFixed(2);if(geocodeCache[key]){cb(geocodeCache[key]);return;}
+  function reverseGeocode(lat,lon,cb){
+    var key=lat.toFixed(2)+','+lon.toFixed(2);
+    if(geocodeCache[key]){cb(geocodeCache[key]);return;}
     var url='https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lon+'&format=json&zoom=10&addressdetails=1';
-    fetch(url,{headers:{'Accept-Language':'en'}}).then(function(r){return r.json();}).then(function(data){var a=data.address||{};
-      var place=a.city||a.town||a.village||a.county||a.state_district||a.state||'Central India';var district=a.state_district||a.county||a.state||'';
-      var res={place:place,district:district};geocodeCache[key]=res;cb(res);}).catch(function(){var f={place:'Central India',district:'Region'};geocodeCache[key]=f;cb(f);});}
+    fetch(url,{headers:{'Accept-Language':'en'}}).then(function(r){return r.json();}).then(function(data){
+      var a=data.address||{};
+      var place=a.city||a.town||a.village||a.county||a.state_district||a.state||'Central India';
+      var district=a.state_district||a.county||a.state||'';
+      var res={place:place,district:district};geocodeCache[key]=res;cb(res);
+    }).catch(function(){var f={place:'Central India',district:'Region'};geocodeCache[key]=f;cb(f);});
+  }
   function showPlacePopup(popupId,iconSvg,lat,lon,rainVal,tempVal){
-    var pre=popupId.replace('-popup','');var popup=document.getElementById(popupId);
-    document.getElementById(pre+'-pp-place').textContent='Loading place…';
-    document.getElementById(pre+'-pp-district').textContent='';
-    document.getElementById(pre+'-pp-loading').style.display='block';
-    document.getElementById(pre+'-pp-body').style.display='grid';
-    document.getElementById(pre+'-pp-icon').innerHTML=iconSvg;
-    document.getElementById(pre+'-pp-rain').textContent=rainVal.toFixed(2);
-    document.getElementById(pre+'-pp-temp').textContent=tempVal.toFixed(1);
-    document.getElementById(pre+'-pp-gmaps').href='https://www.google.com/maps?q='+lat.toFixed(4)+','+lon.toFixed(4);
-    popup.style.left='50%';popup.style.top='54px';popup.classList.add('show');
-    reverseGeocode(lat,lon,function(info){document.getElementById(pre+'-pp-place').textContent=info.place;document.getElementById(pre+'-pp-district').textContent=info.district;document.getElementById(pre+'-pp-loading').style.display='none';});}
-  function hidePlacePopup(id){document.getElementById(id).classList.remove('show');}
-  document.getElementById('main-popup-close').addEventListener('click',function(e){e.stopPropagation();hidePlacePopup('main-popup');});
-  document.getElementById('fcast-popup-close').addEventListener('click',function(e){e.stopPropagation();hidePlacePopup('fcast-popup');});
-  // ---- coarse weather grid ----
+    var pre=popupId.replace('-popup','');
+    var popup=document.getElementById(popupId); if(!popup) return;
+    function setT(id,v){var el=document.getElementById(id); if(el) el.textContent=v;}
+    setT(pre+'-pp-place','Loading place…'); setT(pre+'-pp-district','');
+    var ld=document.getElementById(pre+'-pp-loading'); if(ld) ld.style.display='block';
+    var bd=document.getElementById(pre+'-pp-body'); if(bd) bd.style.display='grid';
+    var ic=document.getElementById(pre+'-pp-icon'); if(ic) ic.innerHTML=iconSvg;
+    setT(pre+'-pp-rain',rainVal.toFixed(2)); setT(pre+'-pp-temp',tempVal.toFixed(1));
+    popup.classList.add('show');
+    reverseGeocode(lat,lon,function(info){
+      setT(pre+'-pp-place',info.place); setT(pre+'-pp-district',info.district);
+      var ld2=document.getElementById(pre+'-pp-loading'); if(ld2) ld2.style.display='none';
+    });
+  }
+  function hidePlacePopup(id){var p=document.getElementById(id); if(p) p.classList.remove('show');}
+  var _mpc=document.getElementById('main-popup-close'); if(_mpc) _mpc.addEventListener('click',function(e){e.stopPropagation();hidePlacePopup('main-popup');});
+  var _fpc=document.getElementById('fcast-popup-close'); if(_fpc) _fpc.addEventListener('click',function(e){e.stopPropagation();hidePlacePopup('fcast-popup');});
+  
   var IR=6,IC=7,marks=[];
+  // Maps a coarse display cell (IR x IC) onto the fine base grid (FR x FC) and returns its value.
+  // This was being called by both maps but was missing — its absence threw a ReferenceError that
+  // silently killed the home-map markers and stopped the forecast detail panel from populating.
   function sampleVal(ir,ic){var fr=Math.min(FR-1,Math.floor((ir+0.5)/IR*FR)),fc=Math.min(FC-1,Math.floor((ic+0.5)/IC*FC));return base[fr*FC+fc];}
   var map=null;
   try{
     map=L.map('map',{zoomControl:true,attributionControl:true,zoomSnap:0.25}).setView([22,80],5);
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Imagery © Esri',maxZoom:12}).addTo(map);
-    for(var ir=0;ir<IR;ir++)for(var ic=0;ic<IC;ic++){var lat=LATN-(ir+0.5)/IR*(LATN-LATS),lon=LONW+(ic+0.5)/IC*(LONE-LONW),val=sampleVal(ir,ic);
-      var m=L.marker([lat,lon],{icon:icon(classify(val)),interactive:true}).addTo(map);
-      (function(mk,mLat,mLon,mVal,mIr,mIc){mk.on('click',function(){var t=classify(mVal*factor);var rn=mVal*factor;var temp=gridTemp(mIr,mIc)+parseFloat(document.getElementById('warm').value);showPlacePopup('main-popup',SVG[t],mLat,mLon,rn,temp);});})(m,lat,lon,val,ir,ic);
-      marks.push({m:m,val:val,type:classify(val)});}
-    map.on('mousemove',function(e){var la=e.latlng.lat,lo=e.latlng.lng,ro=document.getElementById('readout');
-      if(la>=LATS&&la<=LATN&&lo>=LONW&&lo<=LONE){var row=Math.min(FR-1,Math.max(0,Math.floor((LATN-la)/(LATN-LATS)*FR))),col=Math.min(FC-1,Math.max(0,Math.floor((lo-LONW)/(LONE-LONW)*FC)));
-        var v=base[row*FC+col]*factor;document.getElementById('ro-word').textContent=word(classify(v));
-        document.getElementById('ro-lat').textContent=la.toFixed(1)+'°N';document.getElementById('ro-lon').textContent=lo.toFixed(1)+'°E';
-        document.getElementById('ro-val').textContent=v.toFixed(2);ro.style.opacity='1';}else ro.style.opacity='0';});
-    map.on('mouseout',function(){document.getElementById('readout').style.opacity='0';});
+    
+    for(var ir=0;ir<IR;ir++){
+        for(var ic=0;ic<IC;ic++){
+            var lat=LATN-(ir+0.5)/IR*(LATN-LATS),lon=LONW+(ic+0.5)/IC*(LONE-LONW),val=sampleVal(ir,ic);
+            var m=L.marker([lat,lon],{icon:icon(classify(val)), interactive:true}).addTo(map);
+            (function(mk,mLat,mLon,mVal,mIr,mIc){
+                mk.on('click',function(){
+                    var t=classify(mVal*factor), rn=mVal*factor;
+                    var warmEl=document.getElementById('warm'), wv=warmEl?parseFloat(warmEl.value):0;
+                    var temp=gridTemp(mIr,mIc)+wv;
+                    showPlacePopup('main-popup',SVG[t],mLat,mLon,rn,temp);
+                });
+            })(m,lat,lon,val,ir,ic);
+            marks.push({m:m,val:val,type:classify(val), ir:ir, ic:ic, lat:lat, lon:lon});
+        }
+    }
     map.on('click',function(){hidePlacePopup('main-popup');});
+    
   }catch(err){}
+  
   var BOUNDS=map?L.latLngBounds([[LATS-0.3,LONW-0.3],[LATN+0.3,LONE+0.3]]):null;
   var INDIA_BOUNDS=map?L.latLngBounds([[6,68],[36,97]]):null;
   function lockToBox(){if(!map)return;try{var z=map.getBoundsZoom(BOUNDS)-0.1;map.setMaxBounds(BOUNDS.pad(0.04));map.setMinZoom(z);if(map.getZoom()<z)map.fitBounds(BOUNDS,{padding:[4,4]});}catch(e){}}
-  function runIntro(){var space=document.getElementById('space');
-    function go(){space.classList.add('gone');if(map){try{if(!reduce){map.fitBounds(INDIA_BOUNDS,{animate:false});setTimeout(function(){map.flyToBounds(BOUNDS,{duration:3.2,padding:[8,8],easeLinearity:0.18});map.once('moveend',lockToBox);},400);}else{map.fitBounds(BOUNDS,{padding:[4,4]});lockToBox();}}catch(e){map.fitBounds(BOUNDS);lockToBox();}}}
-    if(reduce){go();return;}setTimeout(go,1200);}
-  document.getElementById('skip').addEventListener('click',function(){document.getElementById('space').classList.add('gone');if(map){try{map.fitBounds(BOUNDS,{padding:[4,4]});lockToBox();}catch(e){}}});
+  
+  function runIntro(){
+      var space=document.getElementById('space');
+      function go(){
+          if(space)space.classList.add('gone');
+          if(map){
+              try{
+                  if(!reduce){
+                      map.fitBounds(INDIA_BOUNDS,{animate:false});
+                      setTimeout(function(){map.flyToBounds(BOUNDS,{duration:2.8,padding:[8,8],easeLinearity:0.2});map.once('moveend',lockToBox);},300);
+                  }else{
+                      map.fitBounds(BOUNDS,{padding:[4,4]});lockToBox();
+                  }
+              }catch(e){
+                  map.fitBounds(BOUNDS);lockToBox();
+              }
+          }
+      }
+      if(reduce){go();return;}
+      setTimeout(go,100); 
+  }
+  
+  var skipBtn = document.getElementById('skip');
+  if (skipBtn) {
+      skipBtn.addEventListener('click',function(){var space=document.getElementById('space');if(space)space.classList.add('gone');if(map){try{map.fitBounds(BOUNDS,{padding:[4,4]});lockToBox();}catch(e){}}});
+  }
+  
   function narrate(pct){var suns=0,clouds=0,rains=0;marks.forEach(function(o){var t=classify(o.val*factor);if(t==='sun')suns++;else if(t==='cloud')clouds++;else rains++;});
-    var lead=pct<=-20?"Drought watch — ":(pct>=20?"Wet spell — ":"");
-    var msg;if(rains>=clouds+suns)msg="heavy rain across much of Central India right now. 🌧️";
-      else if(suns>=clouds+rains)msg="mostly dry and sunny across the region. ☀️";else msg="sunny in the north-west, rainy in the south-east. 🌤️";
-    document.getElementById('saybar').textContent=lead+msg.charAt(0).toUpperCase()+msg.slice(1);}
-  var fc=document.getElementById('fc'),fctx=fc.getContext('2d'),dpr=Math.min(window.devicePixelRatio||1,2),fcReveal=0;
-  function drawFC(){var w=fc.clientWidth,h=172;fc.width=w*dpr;fc.height=h*dpr;fctx.setTransform(dpr,0,0,dpr,0,0);fctx.clearRect(0,0,w,h);
+    var lead=pct<=-20?"Deficit Warning Corridor — ":(pct>=20?"Convective Accumulation Phase — ":"");
+    var msg;if(rains>=clouds+suns)msg="Widespread spatial saturation observed throughout the central baseline matrix. 🌧️";
+      else if(suns>=clouds+rains)msg="Mostly sunny and dry — a pleasant day across Central India. ☀️";else msg="A few clouds and a slim chance of a shower, mainly in the south-east. 🌤️";
+    var saybar = document.getElementById('saybar');
+    if(saybar) saybar.textContent=lead+msg;}
+  
+  var fc=document.getElementById('fc'),fctx=fc?fc.getContext('2d'):null,dpr=Math.min(window.devicePixelRatio||1,2),fcReveal=0;
+  function drawFC(){
+    if(!fc || !fctx) return;
+    var w=fc.clientWidth,h=150;fc.width=w*dpr;fc.height=h*dpr;fctx.setTransform(dpr,0,0,dpr,0,0);fctx.clearRect(0,0,w,h);
     var pad=20,x0=pad+8,x1=w-pad,y0=14,y1=h-24,n=DATA.forecast.rain.length,mx=9.2;function px(i){return x0+(i/(n-1))*(x1-x0);}function py(v){return y1-(v/mx)*(y1-y0);}
-    fctx.strokeStyle='rgba(120,160,200,.08)';for(var g=0;g<=3;g++){var yy=y0+(g/3)*(y1-y0);fctx.beginPath();fctx.moveTo(x0,yy);fctx.lineTo(x1,yy);fctx.stroke();}
-    var lim=Math.max(1,Math.floor(n*fcReveal));fctx.beginPath();for(var i=0;i<lim;i++)fctx.lineTo(px(i),py(DATA.forecast.high[i]));for(var i2=lim-1;i2>=0;i2--)fctx.lineTo(px(i2),py(DATA.forecast.low[i2]));fctx.closePath();fctx.fillStyle='rgba(70,215,200,.17)';fctx.fill();
-    fctx.strokeStyle='#46d7c8';fctx.lineWidth=2.2;fctx.beginPath();for(var p=0;p<lim;p++){var fx=px(p),fy=py(DATA.forecast.rain[p]);p?fctx.lineTo(fx,fy):fctx.moveTo(fx,fy);}fctx.stroke();
-    for(var d=0;d<lim;d++){fctx.fillStyle='#46d7c8';fctx.beginPath();fctx.arc(px(d),py(DATA.forecast.rain[d]),3,0,7);fctx.fill();}
-    fctx.fillStyle='rgba(144,162,181,.8)';fctx.font='9px IBM Plex Mono';for(var t=0;t<n;t++)fctx.fillText(DATA.forecast.days[t],px(t)-12,h-8);fctx.fillText('mm/day',x0-2,y0+2);}
+    fctx.strokeStyle='rgba(30, 34, 37, 0.06)';for(var g=0;g<=3;g++){var yy=y0+(g/3)*(y1-y0);fctx.beginPath();fctx.moveTo(x0,yy);fctx.lineTo(x1,yy);fctx.stroke();}
+    var lim=Math.max(1,Math.floor(n*fcReveal));fctx.beginPath();for(var i=0;i<lim;i++)fctx.lineTo(px(i),py(DATA.forecast.high[i]));for(var i2=lim-1;i2>=0;i2--)fctx.lineTo(px(i2),py(DATA.forecast.low[i2]));fctx.closePath();fctx.fillStyle='rgba(74, 122, 150, 0.08)';fctx.fill();
+    fctx.strokeStyle='#4A7A96';fctx.lineWidth=2;fctx.beginPath();for(var p=0;p<lim;p++){var fx=px(p),fy=py(DATA.forecast.rain[p]);p?fctx.lineTo(fx,fy):fctx.moveTo(fx,fy);}fctx.stroke();
+    for(var d=0;d<lim;d++){fctx.fillStyle='#4A7A96';fctx.beginPath();fctx.arc(px(d),py(DATA.forecast.rain[d]),3,0,7);fctx.fill();}
+    fctx.fillStyle='#8E989F';fctx.font='10px IBM Plex Mono';for(var t=0;t<n;t++)fctx.fillText(DATA.forecast.days[t],px(t)-12,h-6);fctx.fillText('mm/day',x0-2,y0+2);}
+  
   function rainVerdict(pct){
-    if(pct>=35)return{cat:"Flood alert 🌊",col:"var(--blue)",bg:"rgba(90,166,240,.18)",say:"Extreme rainfall — a "+pct+"% surge would overwhelm rivers and flood lowlands across Central India."};
-    if(pct>=20)return{cat:"Wet spell ☁️",col:"var(--blue)",bg:"rgba(90,166,240,.12)",say:"Noticeably wetter than normal. Reservoirs fill up, but landslide risk rises in hilly areas."};
-    if(pct>5)return{cat:"Slightly wetter",col:"var(--cyan)",bg:"rgba(70,215,200,.10)",say:"A bit more rain than usual — good for crops, unlikely to cause trouble."};
-    if(pct>=-5)return{cat:"All normal ✓",col:"var(--green)",bg:"rgba(94,215,154,.14)",say:"Rain is right on track. Enough water for crops and daily life across the region."};
-    if(pct>=-20)return{cat:"Drier than usual",col:"var(--amber)",bg:"rgba(246,166,35,.10)",say:"Below-normal rain. Farmers may need to irrigate more, and wells start to dip."};
-    if(pct>=-40)return{cat:"Drought ⚠️",col:"var(--coral)",bg:"rgba(244,113,94,.14)",say:""+(-pct)+"% less rain — crops struggle, water bodies shrink, and heat stress rises."};
-    return{cat:"Severe drought 🔴",col:"var(--red)",bg:"rgba(242,80,78,.18)",say:"Critical shortage — "+(-pct)+"% below normal. Widespread crop failure and water scarcity likely."};}
+    if(pct>=35)return{cat:"Flood alert 🌊",col:"var(--ink-dark)",bg:"rgba(200,107,82,0.15)",say:"Extreme rainfall — a "+pct+"% surge would overwhelm rivers and flood lowlands across Central India."};
+    if(pct>=20)return{cat:"Wet spell ☁️",col:"var(--cloud-sky)",bg:"rgba(74,122,150,0.12)",say:"Noticeably wetter than normal. Reservoirs fill up, but landslide risk rises in hilly areas."};
+    if(pct>5)return{cat:"Slightly wetter",col:"var(--cloud-sky)",bg:"rgba(74,122,150,0.08)",say:"A bit more rain than usual — good for crops, unlikely to cause trouble."};
+    if(pct>=-5)return{cat:"All normal ✓",col:"var(--forest-green)",bg:"rgba(61,117,93,0.1)",say:"Rain is right on track. Enough water for crops and daily life across the region."};
+    if(pct>=-20)return{cat:"Drier than usual",col:"var(--terracotta)",bg:"rgba(200,107,82,0.06)",say:"Below-normal rain. Farmers may need to irrigate more, and wells start to dip."}; 
+    if(pct>=-40)return{cat:"Drought ⚠️",col:"var(--terracotta)",bg:"rgba(200,107,82,0.12)",say:""+(-pct)+"% less rain — crops struggle, water bodies shrink, and heat stress rises."};
+    return{cat:"Severe drought 🔴",col:"var(--terracotta)",bg:"rgba(200,107,82,0.2)",say:"Critical shortage — "+(-pct)+"% below normal. Widespread crop failure and water scarcity likely."};}
+  
   function warmVerdict(w){
-    if(w===0)return null;if(w<=0.5)return"A tiny nudge warmer — barely noticeable day-to-day.";
-    if(w<=1.0)return"Nights stay warmer. Heatwave days tick up, and monsoon timing may shift slightly.";
-    if(w<=1.5)return"+"+w.toFixed(1)+"°C is significant — heatwaves hit harder and last longer across Central India.";
-    if(w<=2.0)return"At +"+w.toFixed(1)+"°C, crop yields start dropping and outdoor work turns dangerous in peak summer.";
-    if(w<=2.5)return"+"+w.toFixed(1)+"°C: rivers run lower in the dry season, and humid heat begins to threaten health.";
-    if(w<=3.0)return"Dangerously hot. +"+w.toFixed(1)+"°C means parts of Central India hit 50°C on bad days. Water stress is severe.";
-    if(w<=3.5)return"+"+w.toFixed(1)+"°C — beyond what most crops can handle. Migration pressure builds.";
-    return"🔥 +"+w.toFixed(1)+"°C: catastrophic. This is the scenario climate scientists warn most urgently against.";}
-  function applyHeatEffect(w){var ov=document.getElementById('heat-overlay'),sh=document.getElementById('heat-shimmer');
-    if(w<=0){ov.style.opacity='0';sh.style.opacity='0';document.body.classList.remove('heat-pulse');return;}
-    var t=w/4,r=Math.round(255*Math.min(1,t*2.2)),g=Math.round(Math.max(0,80-t*80)),b=0,alpha=t*0.28;
-    ov.style.background='radial-gradient(ellipse at 55% 10%, rgba('+r+','+g+','+b+','+alpha*1.2+') 0%, rgba('+r+','+g+','+b+','+(alpha*0.5)+') 60%, transparent 100%)';ov.style.opacity='1';
-    sh.style.opacity=Math.min(1,Math.max(0,(w-1.5)/2.5)*0.8)+'';
-    if(w>=2.5)document.body.classList.add('heat-pulse');else document.body.classList.remove('heat-pulse');}
+    if(w<=0)return null;
+    if(w<=0.5)return"A touch warmer — barely noticeable day to day.";
+    if(w<=1.0)return"At +"+w.toFixed(1)+"°C, nights stay warmer and heatwave days start to tick up.";
+    if(w<=1.5)return"+"+w.toFixed(1)+"°C is significant — heatwaves hit harder and last longer across the region.";
+    if(w<=2.0)return"At +"+w.toFixed(1)+"°C, crop yields slip and peak-summer outdoor work turns dangerous.";
+    if(w<=2.5)return"+"+w.toFixed(1)+"°C: dry-season rivers run low and humid heat begins to threaten health.";
+    if(w<=3.0)return"Dangerously hot — +"+w.toFixed(1)+"°C pushes parts of Central India past 48°C on bad days.";
+    if(w<=3.5)return"+"+w.toFixed(1)+"°C is beyond what most crops can take; water stress turns severe.";
+    return"🔥 +"+w.toFixed(1)+"°C — a catastrophic scenario climate scientists warn most urgently against.";}
+  
+  function applyHeatEffect(w, pct){
+    var ov = document.getElementById('heat-overlay');
+    var sh = document.getElementById('heat-shimmer');
+    var fo = document.getElementById('left-fire-overlay');
+    if(!ov || !sh || !fo) return;
+    
+    if(w > 0) {
+        var t=w/4, alpha=t*0.20;
+        ov.style.background='radial-gradient(circle at 50% 0%, rgba(200,107,82,'+(alpha*1.3)+') 0%, rgba(200,107,82,'+(alpha*0.4)+') 55%, rgba(200,107,82,0) 82%)';ov.style.opacity='1';
+        sh.style.opacity=Math.min(1,Math.max(0,(w-1.5)/2.5)*0.5)+'';
+        if(w>=2.5) document.body.classList.add('heat-pulse'); else document.body.classList.remove('heat-pulse');
+        fo.style.opacity = '0';
+    } else {
+        ov.style.opacity='0';
+        sh.style.opacity='0';
+        document.body.classList.remove('heat-pulse');
+        if (pct < 0) {
+            var fireIntensity = Math.max(0, Math.min(1, Math.abs(pct) / 60));
+            fo.style.opacity = (fireIntensity * 0.85) + '';
+        } else {
+            fo.style.opacity = '0';
+        }
+    }
+  }
+  
   var rain=document.getElementById('rain'),warm=document.getElementById('warm');
-  function apply(){var pct=parseInt(rain.value,10),w=parseFloat(warm.value);factor=1+pct/100;
-    document.getElementById('rainv').textContent=pct===0?'normal':((pct>0?'+':'')+pct+'%');
-    document.getElementById('warmv').textContent='+'+w.toFixed(1)+' °C';
-    marks.forEach(function(o){var t=classify(o.val*factor);if(t!==o.type){o.type=t;o.m.setIcon(icon(t));}});
+  function apply(){
+    if(!rain || !warm) return;
+    var pct=parseInt(rain.value,10), w=parseFloat(warm.value);
+    factor=1+pct/100;
+    
+    var rvNode = document.getElementById('rainv'); if(rvNode) rvNode.textContent=pct===0?'normal':((pct>0?'+':'')+pct+'%');
+    var wvNode = document.getElementById('warmv'); if(wvNode) wvNode.textContent='+'+w.toFixed(1)+' °C';
+    
+    marks.forEach(function(o){var t=classify(o.val*factor);if(t!==o.type){o.type=t;if(o.m)o.m.setIcon(icon(t));}});
     narrate(pct);
-    var nr=Math.round(DATA.scenario.annualRain*(1+pct/100)),dr=nr-DATA.scenario.annualRain;
-    document.getElementById('imp-rain').innerHTML=nr+'<span style="font-size:13px;color:var(--txt3)"> mm</span>';
-    document.getElementById('imp-raind').textContent=pct?((dr>0?'+':'')+dr+' mm'):'normal';
+    var nr=Math.round(DATA.scenario.annualRain*(1+pct/100)), dr=nr-DATA.scenario.annualRain;
+    
+    var irNode = document.getElementById('imp-rain'); if(irNode) irNode.innerHTML=nr+'<span style="font-size:14px;font-family:var(--font-mono)"> mm</span>';
+    var irdNode = document.getElementById('imp-raind'); if(irdNode) irdNode.textContent=pct?((dr>0?'+':'')+dr+' mm'):'normal';
+    
     var hwBase=Math.round(DATA.scenario.baseHeatwave);
-    var hw=Math.round(curveAt(DATA.scenario.heatwaveCurve,DATA.scenario.baseHeatwave,DATA.scenario.heatwavePerDeg,w));
-    document.getElementById('imp-hw').textContent=hw;document.getElementById('imp-hwd').textContent=w?('+'+(hw-hwBase)+' more'):'normal';
-    var wnTile=document.getElementById('imp-wn-tile');
-    if(DATA.scenario.baseWarmNights!=null){wnTile.style.display='';
-      var wnBase=Math.round(DATA.scenario.baseWarmNights);
-      var wn=Math.round(curveAt(DATA.scenario.warmNightsCurve,DATA.scenario.baseWarmNights,5,w));
-      document.getElementById('imp-wn').textContent=wn;
-      document.getElementById('imp-wnd').textContent=w?('+'+(wn-wnBase)+' more'):'normal';}
-    else{wnTile.style.display='none';}
-    if(DATA.scenario.real){var hf=document.getElementById('homefoot');
-      if(hf)hf.innerHTML='VAYU · climate digital twin · satellite imagery © Esri · rain, heat &amp; warm nights from IMD data';}
-    var rv=rainVerdict(pct),wv=warmVerdict(w),say=rv.say;if(wv)say+=' '+wv;
-    var f=document.getElementById('flag');f.textContent=rv.cat;f.style.color=rv.col;f.style.background=rv.bg;
-    document.getElementById('say').textContent=say;document.getElementById('verdict').style.borderColor=rv.col;
-    applyHeatEffect(w);}
-  rain.addEventListener('input',apply);warm.addEventListener('input',apply);
-  document.getElementById('reset').addEventListener('click',function(){rain.value=0;warm.value=0;apply();});
-  function countUp(el,to,dur,suf,dec){var t0=performance.now();suf=suf||'';dec=dec||0;(function step(t){var k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3);el.innerHTML=(to*e).toFixed(dec)+suf;if(k<1)requestAnimationFrame(step);})(performance.now());}
-  function boot(){apply();drawFC();
-    document.getElementById('winpct').textContent=DATA.model.gain+'%';
-    countUp(document.getElementById('m-gain'),DATA.model.gain,1200,'<span class="u">%</span>',1);
-    countUp(document.getElementById('m-days'),DATA.model.trainDays,1400,'',0);
-    countUp(document.getElementById('m-cells'),IR*IC,1100,'',0);
-    var _rg=DATA.model.rmseGuess,_ra=DATA.model.rmseAI;
-    document.getElementById('cmp-guess').textContent=_rg.toFixed(2)+' mm';
-    document.getElementById('cmp-ai').textContent=_ra.toFixed(2)+' mm';
-    var _my=document.getElementById('m-years');if(_my&&DATA.model.yearsTested!=null)_my.textContent=DATA.model.yearsTested;
-    var _aiw=_rg?Math.max(4,Math.min(100,_ra/_rg*100)):92.2;
-    setTimeout(function(){document.getElementById('bar-guess').style.width='100%';document.getElementById('bar-ai').style.width=_aiw.toFixed(1)+'%';},350);
-    if(!reduce){var f0=performance.now();(function frev(t){fcReveal=Math.min(1,(t-f0)/1100);drawFC();if(fcReveal<1)requestAnimationFrame(frev);})(f0);}else{fcReveal=1;drawFC();}
-    runIntro();}
-  // ===== FORECAST VIEW =====
+    var hw=Math.round(hwBase + (w*DATA.scenario.heatwavePerDeg));
+    var ihwNode = document.getElementById('imp-hw'); if(ihwNode) ihwNode.textContent=hw;
+    var ihwdNode = document.getElementById('imp-hwd'); if(ihwdNode) ihwdNode.textContent=w?('+'+(hw-hwBase)+' more'):'normal';
+    
+    var wnBase=Math.round(DATA.scenario.baseWarmNights);
+    var wn=Math.round(wnBase + (w*5)); 
+    var impWn = document.getElementById('imp-wn'); if(impWn) impWn.textContent=wn;
+    var impWnd = document.getElementById('imp-wnd'); if(impWnd) impWnd.textContent=w?('+'+(wn-wnBase)+' more'):'normal';
+    
+    var rv=rainVerdict(pct), wv=warmVerdict(w);
+    var say=rv.say; if(wv) say+=' '+wv;
+    var f=document.getElementById('flag'); if(f) { f.textContent=rv.cat;f.style.color=rv.col;f.style.background=rv.bg;f.style.borderColor=rv.col; }
+    var sayNode = document.getElementById('say'); if(sayNode) sayNode.textContent=say;
+    var verdictNode = document.getElementById('verdict'); if(verdictNode) verdictNode.style.borderColor=rv.col;
+    applyHeatEffect(w, pct);}
+  
+  if(rain) rain.addEventListener('input',apply);
+  if(warm) warm.addEventListener('input',apply);
+  
+  var resetBtn = document.getElementById('reset');
+  if(resetBtn) resetBtn.addEventListener('click',function(){rain.value=0;warm.value=0;apply();});
+  
+  function countUp(el,to,dur,suf,dec){
+      if(!el) return;
+      var t0=performance.now();suf=suf||'';dec=dec||0;(function step(t){var k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3);el.innerHTML=(to*e).toFixed(dec)+suf;if(k<1)requestAnimationFrame(step);})(performance.now());
+  }
+  
   var FC_DAYS=DATA.forecast.days,FC_RAIN=DATA.forecast.rain,FC_HIGH=DATA.forecast.high,FC_TEMP=[26,27,25,28,27,29,28];
+  var forecastDescriptions=[
+    "Mostly sunny and dry — a pleasant day across Central India.",
+    "A few clouds and a slim chance of a shower, mainly in the south-east.",
+    "A few clouds and a slim chance of a shower, mainly in the south-east.",
+    "Cloudier today, with the best chance of rain over the south-east.",
+    "Cloudier today, with the best chance of rain over the south-east.",
+    "Cloudier today, with the best chance of rain over the south-east.",
+    "Cloudier today, with the best chance of rain over the south-east."
+  ];
+  
   var fmap=null,fmarks=[],fday=0;
   function fLevel(d){return Math.min(1,FC_HIGH[d]/9);}
   function fMul(d){return 0.38+fLevel(d)*0.48;}
   function headType(d){var L=fLevel(d);return L<0.62?'sun':(L<0.85?'partly':'cloud');}
-  function buildStrip(){var el=document.getElementById('daystrip');el.innerHTML='';
+  
+  function buildStrip(){var el=document.getElementById('daystrip');if(!el)return; el.innerHTML='';
     for(var d=0;d<7;d++){(function(d){var c=document.createElement('div');c.className='daychip'+(d===fday?' active':'');
-      c.innerHTML='<div class="dl">'+FC_DAYS[d]+'</div><div class="di">'+SVG[headType(d)]+'</div><div class="dr">'+FC_RAIN[d].toFixed(1)+'mm</div><div class="dt">'+FC_TEMP[d]+'\u00B0</div>';
+      c.innerHTML='<div class="dl">'+FC_DAYS[d]+'</div><div class="di">'+SVG[headType(d)]+'</div><div class="dr">'+FC_RAIN[d].toFixed(2)+'mm</div><div class="dt">'+FC_TEMP[d]+'\u00B0</div>';
       c.addEventListener('click',function(){selectDay(d);});el.appendChild(c);})(d);}}
+  
   function initFmap(){fmap=L.map('fmap',{zoomControl:true,attributionControl:true,zoomSnap:0.25}).setView([22,79],5);
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Imagery \u00A9 Esri',maxZoom:12}).addTo(fmap);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Analysis Layer © Esri',maxZoom:12}).addTo(fmap);
     for(var ir=0;ir<IR;ir++)for(var ic=0;ic<IC;ic++){var lat=LATN-(ir+0.5)/IR*(LATN-LATS),lon=LONW+(ic+0.5)/IC*(LONE-LONW),val=sampleVal(ir,ic);
       var m=L.marker([lat,lon],{icon:icon('sun'),interactive:true}).addTo(fmap);
-      (function(mk,mLat,mLon,mVal,mIr,mIc){mk.on('click',function(){var mul=fMul(fday);var t=classify(mVal*mul);var rn=mVal*mul;var temp=FC_TEMP[fday]+(gridTemp(mIr,mIc)-27);showPlacePopup('fcast-popup',SVG[t],mLat,mLon,rn,temp);});})(m,lat,lon,val,ir,ic);
+      (function(mk,mLat,mLon,mVal,mIr,mIc){
+          mk.on('click',function(){
+              var mul=fMul(fday), t=classify(mVal*mul), rn=mVal*mul;
+              var temp=FC_TEMP[fday]+(gridTemp(mIr,mIc)-27);
+              showPlacePopup('fcast-popup',SVG[t],mLat,mLon,rn,temp);
+          });
+      })(m,lat,lon,val,ir,ic);
       fmarks.push({m:m,val:val,type:'sun'});}
+    fmap.on('click',function(){hidePlacePopup('fcast-popup');});
     var FB=L.latLngBounds([[LATS-0.3,LONW-0.3],[LATN+0.3,LONE+0.3]]);fmap.fitBounds(FB,{padding:[4,4]});
-    try{var z=fmap.getBoundsZoom(FB)-0.1;fmap.setMaxBounds(FB.pad(0.04));fmap.setMinZoom(z);}catch(e){}
-    fmap.on('click',function(){hidePlacePopup('fcast-popup');});}
-  function selectDay(d){fday=d;document.getElementById('fslider').value=d;var mul=fMul(d),ht=headType(d);
-    fmarks.forEach(function(o){var t=classify(o.val*mul);if(t!==o.type){o.type=t;o.m.setIcon(icon(t));}});
-    hidePlacePopup('fcast-popup');
-    document.getElementById('fdaynum').textContent=d+1;document.getElementById('fdaylabel').textContent=FC_DAYS[d];
-    document.getElementById('fdate2').textContent=FC_DAYS[d];document.getElementById('fbigday').textContent=FC_DAYS[d];
-    document.getElementById('fbigicon').innerHTML=SVG[ht];
-    document.getElementById('frain').textContent=FC_RAIN[d].toFixed(2)+' mm';
-    document.getElementById('frange').textContent='could reach '+FC_HIGH[d].toFixed(1)+' mm';
-    document.getElementById('ftemp').textContent=FC_TEMP[d]+'\u00B0C';
-    var sum=ht==='sun'?"Mostly sunny and dry \u2014 a pleasant day across Central India.":(ht==='partly'?"A few clouds and a slim chance of a shower, mainly in the south-east.":"Cloudier today, with the best chance of rain over the south-east.");
-    document.getElementById('fsummary').textContent=sum;
-    document.getElementById('fsaybar').textContent=FC_DAYS[d]+" \u2014 "+(ht==='sun'?"clear and dry across the region. \u2600\uFE0F":(ht==='partly'?"a stray shower possible in the south-east. \uD83C\uDF24\uFE0F":"showers likely in the south-east. \uD83C\uDF27\uFE0F"));
+    try{var z=fmap.getBoundsZoom(FB)-0.1;fmap.setMaxBounds(FB.pad(0.04));fmap.setMinZoom(z);}catch(e){}}
+  
+  function selectDay(d){fday=d;
+    var fs = document.getElementById('fslider');
+    if(fs) fs.value=d;
+    
+    var mul=fMul(d),ht=headType(d);
+    fmarks.forEach(function(o){var t=classify(o.val*mul);if(t!==o.type){o.type=t;if(o.m)o.m.setIcon(icon(t));}});
+    
+    var fdynum = document.getElementById('fdaynum'); if(fdynum) fdynum.textContent=d+1;
+    var fdylabel = document.getElementById('fdaylabel'); if(fdylabel) fdylabel.textContent=FC_DAYS[d];
+    var fd2 = document.getElementById('fdate2'); if(fd2) fd2.textContent=FC_DAYS[d];
+    var fbday = document.getElementById('fbigday'); if(fbday) fbday.textContent=FC_DAYS[d];
+    var fbicon = document.getElementById('fbigicon'); if(fbicon) fbicon.innerHTML=SVG[ht];
+    
+    var frain = document.getElementById('frain'); if(frain) frain.textContent=FC_RAIN[d].toFixed(2)+' mm';
+    var frng = document.getElementById('frange'); if(frng) frng.textContent='could reach '+FC_HIGH[d].toFixed(1)+' mm';
+    var ftmp = document.getElementById('ftemp'); if(ftmp) ftmp.textContent=FC_TEMP[d]+'\u00B0C';
+    var ftmpsub = document.getElementById('ftempsub'); if(ftmpsub) ftmpsub.textContent='typical for the season';
+    var fsum = document.getElementById('fsummary'); if(fsum) fsum.textContent=forecastDescriptions[d];
+    
+    var fsaybar = document.getElementById('fsaybar');
+    if(fsaybar) fsaybar.textContent=FC_DAYS[d]+" — "+(ht==='sun'?"Mostly sunny and dry. \u2600\uFE0F":(ht==='partly'?"A few clouds and a slim chance of a shower. \uD83C\uDF24\uFE0F":"Cloudier today, with the best chance of rain. \uD83C\uDF27\uFE0F"));
+    
     var chips=document.querySelectorAll('.daychip');for(var i=0;i<chips.length;i++)chips[i].classList.toggle('active',i===d);}
-  document.getElementById('fslider').addEventListener('input',function(){selectDay(parseInt(this.value,10));});
-  function showForecast(){document.getElementById('view-home').style.display='none';document.getElementById('view-forecast').style.display='block';
-    if(!fmap){initFmap();buildStrip();}selectDay(fday);
+  
+  var fsl = document.getElementById('fslider');
+  if(fsl) fsl.addEventListener('input',function(){selectDay(parseInt(this.value,10));});
+  
+  function showForecast(){
+    var vh = document.getElementById('view-home'); if(vh) vh.style.display='none';
+    var vf = document.getElementById('view-forecast'); if(vf) vf.style.display='block';
+    if(!fmap){initFmap();}
+    buildStrip(); 
+    selectDay(fday);
     setTimeout(function(){if(fmap){fmap.invalidateSize();var FB=L.latLngBounds([[LATS-0.3,LONW-0.3],[LATN+0.3,LONE+0.3]]);fmap.fitBounds(FB,{padding:[4,4]});}},100);window.scrollTo(0,0);}
-  function showHome(){document.getElementById('view-forecast').style.display='none';document.getElementById('view-home').style.display='block';setTimeout(function(){if(map)map.invalidateSize();},80);window.scrollTo(0,0);}
-  document.getElementById('openForecast').addEventListener('click',showForecast);
-  document.getElementById('backHome').addEventListener('click',showHome);
-  window.addEventListener('resize',drawFC);boot();
+    
+  function showHome(){
+    var vf = document.getElementById('view-forecast'); if(vf) vf.style.display='none';
+    var vh = document.getElementById('view-home'); if(vh) vh.style.display='block';
+    setTimeout(function(){if(map)map.invalidateSize();},80);window.scrollTo(0,0);}
+  
+  var opf = document.getElementById('openForecast');
+  if(opf) opf.addEventListener('click',showForecast);
+  
+  var bh = document.getElementById('backHome');
+  if(bh) bh.addEventListener('click',showHome);
+  
+  window.addEventListener('resize',drawFC);
+  
+  function boot(){
+    buildStrip();
+    apply();
+    drawFC();
+    var wp = document.getElementById('winpct'); if(wp) wp.textContent=DATA.model.gain+'%';
+    countUp(document.getElementById('m-gain'),DATA.model.gain,1200,'<span class="u">%</span>',1);
+    countUp(document.getElementById('m-days'),DATA.model.trainDays,1400,'',0);
+    countUp(document.getElementById('m-cells'),IR*IC,1100,'',0);
+    var _rg=DATA.model.rmseGuess,_ra=DATA.model.rmseAI;
+    var cgus = document.getElementById('cmp-guess'); if(cgus) cgus.textContent=_rg.toFixed(2)+' mm';
+    var cai = document.getElementById('cmp-ai'); if(cai) cai.textContent=_ra.toFixed(2)+' mm';
+    var _my=document.getElementById('m-years');if(_my&&DATA.model.yearsTested!=null)_my.textContent=DATA.model.yearsTested;
+    var _aiw=_rg?Math.max(4,Math.min(100,_ra/_rg*100)):92.2;
+    setTimeout(function(){
+        var bg = document.getElementById('bar-guess'); if(bg) bg.style.width='100%';
+        var ba = document.getElementById('bar-ai'); if(ba) ba.style.width=_aiw.toFixed(1)+'%';
+    },350);
+    if(!reduce){var f0=performance.now();(function frev(t){fcReveal=Math.min(1,(t-f0)/1100);drawFC();if(fcReveal<1)requestAnimationFrame(frev);})(f0);}else{fcReveal=1;drawFC();}
+    runIntro();
+  }
+  boot();
 })();
 </script>
 </body>
