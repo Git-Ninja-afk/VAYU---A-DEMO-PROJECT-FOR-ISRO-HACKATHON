@@ -1,0 +1,63 @@
+VAYU: Research, Methodology & Design Rationale
+AI-Powered Digital Twin of India's Climate | Bharatiya Antariksh Hackathon 2026 (PS-5)
+Team VAYU – Delhi Technological University
+
+Welcome to our research log. We created this document to transparently trace our journey from reviewing the literature to formulating our hypothesis, selecting our architecture, and ultimately evaluating our model against honest baselines. Our goal is to clearly explain how well we understood the problem and what concrete steps we took to solve it.
+
+### 1. Understanding the Problem
+Forecasting India's climate is notoriously difficult. We identified three primary hurdles during our initial research:
+* The monsoon is highly chaotic and spatially sharp, meaning rainfall can vary drastically between neighboring areas on the exact same day.
+* The climate signal is non-stationary due to climate change, making static, one-time trained models quickly outdated. 
+* National data sources like IMD gridded products, ISRO/INSAT imagery, and MOSDAC datasets are incredibly rich but highly heterogeneous in format and resolution.
+
+Because yesterday's normal is no longer tomorrow's, we realized that a continuously updated digital twin was necessary, rather than a fixed offline model. Furthermore, a raw forecast tensor is not actionable for end-users; the output needs to be decision-ready, such as a drought-risk flag or a heatwave-day count. 
+
+Our core hypothesis is that we can beat operational baselines—specifically persistence and climatology—using only indigenous data. We theorized that a spatio-temporal deep learning model handling both spatial structure (via convolution) and temporal memory (via recurrence), enhanced by attention mechanisms, would be the best approach for predicting daily rainfall and temperature at a 0.25° resolution over India.
+
+### 2. Literature Review & Design Decisions
+Rather than just listing what we read, we wanted to highlight how specific papers directly influenced our engineering decisions. 
+
+* Shi et al. (2015): Convolutions preserve spatial structure better than fully-connected LSTMs. -> We made ConvLSTM2D the backbone of our forecast engine.
+* Pai et al. (2014): The IMD 0.25° gridded dataset is the accepted high-resolution ground truth, though it has known coastal/orographic biases. -> We adopted this as our primary target grid and actively handled its documented weaknesses during preprocessing.
+* Wang et al. (2017): Allowing spatiotemporal memory to travel between layers improves long-horizon predictions. -> We stacked ConvLSTM layers and added an attention pathway to carry salient information forward.
+* Sønderby et al. (2020): Self-attention helps models focus on regions and lead-times that matter, maintaining skill at longer horizons. -> We added an attention block over the ConvLSTM feature maps to specifically support our 7-day forecasts.
+* Ravuri et al. (2021): Pixel-wise MSE/L2 loss produces overly smoothed fields; honest evaluation requires acknowledging this blurring. -> We report both RMSE and MAE, and openly discuss the limitations of blurring rather than cherry-picking flattering metrics.
+* Rasp et al. (2020): Data-driven models must be measured against persistence and climatology to prove real value. -> We defined our evaluation protocol strictly around beating persistence, not just other neural networks.
+* Bauer et al. (2021): A digital twin is a continuously updated replica meant for running what-if scenarios. -> We grounded our system as a true digital twin with a "What-If Scenario Engine" rather than a standard forecast model.
+* Pathak et al. (2022): Data-driven models can produce global forecasts exponentially faster than physics-based models, making scenario sweeps affordable. -> This validated that our continuous-update design is computationally realistic and scalable.
+* Vandal et al. (2017): Deep downscaling can generate higher-resolution fields from coarser inputs. -> This informed our future roadmap for pushing below our current 0.25° resolution to the district level.
+
+### 3. Why We Chose ConvLSTM2D + Attention
+We carefully considered several architectures before making our choice:
+* Plain CNNs capture space but completely forget time, rendering them useless for sequential rainfall data.
+* Plain LSTMs capture time but destroy the spatial structure of the data.
+* Pure Transformers (like GraphCast) are state-of-the-art globally, but are highly data-hungry; with our 19-year dataset over Central India, we risked overfitting.
+* ConvLSTM2D with Attention perfectly matched our model capacity to our data budget, providing a spatio-temporal inductive bias and selective focus for our 7-day horizon.
+
+### 4. Data Processing Harmonization
+We are incredibly proud that our sources are 100% indigenous to India. 
+* We used IMD gridded rainfall and temperature (0.25°) as our primary target and ground truth.
+* We integrated ISRO/INSAT satellite imagery to provide real-time observational context.
+* We utilized MOSDAC climate products for additional geophysical variables.
+
+Our preprocessing pipeline was built to handle quality validation, regridding to a common 0.25° grid, temporal synchronization across different cadences, and robust feature engineering. Crucially, to avoid data leakage, we split our historical 19-year archive chronologically rather than randomly, ensuring the model is never tested on days it could have already peeked at.
+
+### 5. Honest Evaluation Methodology
+A data-driven model only proves its worth if it can beat naïve baselines. We evaluated our system against a persistence baseline ("tomorrow equals today") and a long-term climatology baseline. We deliberately report both MAE and RMSE to remain honest about any blurring effects.
+
+* Our rainfall RMSE is 2.47 mm, compared to the persistence baseline of 2.68 mm.
+* We achieved a 7.7% lower MAE than the persistence baseline.
+* This evaluation was conducted over 120+ grid cells in Central India across 3 completely unseen test years.
+
+### 6. Known Limitations
+We believe in being transparent about where our model currently struggles:
+* Like all MSE-trained forecasters, our model under-predicts sharp extremes and slightly over-smooths spatial rainfall fields.
+* Our pilot geography is currently limited to Central India, and hasn't yet been validated nationwide across regions like the Western Ghats or Himalayan foothills.
+* Our model size is currently capped by our ~19-year data budget.
+* While we have implemented continuous updating, full 4D-Var-grade data assimilation remains future work.
+
+### 7. Future Roadmap
+* Downscaling below 0.25° to the district level via deep super-resolution.
+* Upgrading to Transformer/operator backbones once we secure multi-decade, pan-India data.
+* Providing probabilistic outputs for calibrated uncertainty instead of deterministic fields.
+* Baking mass and energy physical constraints into the loss function to reduce the blurring of extreme events.
